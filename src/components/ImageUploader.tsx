@@ -2,7 +2,8 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { Camera, Upload, X, Leaf } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { analyzeLeafImage, AnalysisResult } from '@/lib/diseaseAnalyzer';
+import { AnalysisResult } from '@/lib/diseaseAnalyzer';
+import { analyzeTeaLeafImage } from '@/lib/mlAnalyzer';
 
 interface ImageUploaderProps {
   onAnalysisComplete: (result: AnalysisResult, imageUrl: string) => void;
@@ -76,7 +77,7 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     
     // Run analysis synchronously (it's now fast with sampling)
-    const result = analyzeLeafImage(imageData);
+    const result = analyzeTeaLeafImage(imageData);
     console.log('Analysis complete:', result.processingTimeMs.toFixed(0), 'ms');
     
     onAnalysisComplete(result, imageUrl);
