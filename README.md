@@ -1,73 +1,129 @@
-# Welcome to your Lovable project
+# 🌱 TEA-SHIELD  
+### Offline-First Tea Leaf Disease Detection & Decision Support System
 
-## Project info
+TEA-SHIELD is a **mobile-first, offline-capable web application** designed to help **tea farmers and field workers in Assam** detect tea leaf diseases accurately and take the **right action at the right time**.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+The app focuses on **accuracy, trust, and usability**, avoiding blind AI guesses and prioritizing explainable, stable results.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🚀 Problem Statement
 
-**Use Lovable**
+Tea farmers often face:
+- Late detection of leaf diseases
+- Confusing or unreliable diagnostic tools
+- Lack of expert access in remote areas
+- Language and digital literacy barriers
+- Poor internet connectivity in the field
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Wrong or delayed decisions can lead to **rapid disease spread and yield loss**.
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## ✅ Solution Overview
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+TEA-SHIELD provides:
+- **Accurate tea leaf disease detection**
+- **Confidence-aware recommendations**
+- **Offline-first operation**
+- **Multilingual, farmer-friendly UI**
+- **Clear step-by-step guidance**
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+The system is designed as a **decision-support tool**, not a blind automation system.
 
-Follow these steps:
+---
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🦠 Supported Diseases
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+The app detects **only the following diseases**:
 
-# Step 3: Install the necessary dependencies.
-npm i
+- Red Rust  
+- Brown Blight  
+- Blister / White Blight  
+- Healthy Leaf  
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+> The system never invents disease names and avoids confident wrong predictions.
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📸 Image Input Options
 
-**Use GitHub Codespaces**
+- 📷 Real-time camera capture (mobile & laptop)
+- 📂 Upload image from device (gallery / file picker)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Users can easily switch between camera and upload modes.
 
-## What technologies are used for this project?
+---
 
-This project is built with:
+## 🧠 Disease Analysis Approach (Accuracy First)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+To ensure **stable and correct results**, TEA-SHIELD uses a **deterministic, explainable pipeline**:
 
-## How can I deploy this project?
+### Key Principles
+- Leaf isolation (background ignored)
+- HSV/LAB color-space analysis (not raw RGB)
+- Non-overlapping disease rules
+- Scoring-based classification (no first-match logic)
+- Uncertainty handling (“Recheck image” when needed)
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+> Accuracy and trust are prioritized over flashy AI claims.
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## 📊 Severity & Confidence
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Severity
+- Pixel-based calculation
+- Percentage of affected leaf area
+- Classified as:
+  - 🟢 Low
+  - 🟡 Medium
+  - 🔴 High
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### Confidence
+- Calculated from:
+  - Rule dominance
+  - Signal consistency
+  - Image quality
+- Displayed as a percentage
+
+---
+
+## 🎯 Confidence-Based Action Advice
+
+Recommendations change based on confidence:
+
+- **High confidence** → Act immediately  
+- **Medium confidence** → Recheck in 2–3 days  
+- **Low confidence** → Take another photo or consult an expert  
+
+This prevents **wrong-but-confident actions**.
+
+---
+
+## ⚠️ Disease Progression Warning
+
+The app warns users about **possible disease spread** if left untreated, helping encourage **early intervention**.
+
+---
+
+## 🧠 “Why This Happened” Insight
+
+Each diagnosis includes a simple explanation of **possible causes**, such as:
+- High humidity
+- Poor air circulation
+- Delayed pruning
+
+This helps farmers **prevent recurrence**, not just treat symptoms.
+
+---
+
+## 🌍 Language Support (Offline)
+
+TEA-SHIELD supports **three languages**, fully offline:
+
+- English  
+- Assamese  
+- Hindi  
+
+A single toggle cycles through:
