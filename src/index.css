@@ -194,6 +194,20 @@
     pointer-events: none;
   }
 
+  .weather-gradient-card {
+    @apply rounded-2xl overflow-hidden relative;
+    background: linear-gradient(135deg, hsl(168 45% 45%) 0%, hsl(165 50% 35%) 50%, hsl(160 55% 30%) 100%);
+    box-shadow: 0 8px 32px -8px hsl(165 50% 25% / 0.4);
+  }
+
+  .weather-gradient-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 80% 20%, hsl(0 0% 100% / 0.15) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
   /* Animations */
   .fade-in {
     animation: fade-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
