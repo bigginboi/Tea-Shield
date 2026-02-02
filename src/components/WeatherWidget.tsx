@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Cloud, Sun, CloudRain, Thermometer, Droplets, Wind, AlertTriangle, CheckCircle, MapPin, Loader2, CloudSnow, CloudFog } from 'lucide-react';
+import { Cloud, Sun, CloudRain, Thermometer, Droplets, Wind, AlertTriangle, CheckCircle, MapPin, Loader2, CloudSnow, CloudFog, WifiOff } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useNetwork } from '@/contexts/NetworkContext';
 
 interface WeatherData {
   temperature: number;
@@ -9,6 +10,7 @@ interface WeatherData {
   icon: 'sun' | 'cloud' | 'rain' | 'snow' | 'fog';
   windSpeed: number;
   locationName?: string;
+  cached?: boolean;
 }
 
 interface TeaWeatherAssessment {
@@ -21,7 +23,9 @@ interface GeoLocation {
   longitude: number;
 }
 
-// Weather code mapping from Open-Meteo
+const WEATHER_CACHE_KEY = 'tea-shield-weather-cache';
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+
 function getWeatherCondition(code: number): { conditions: string; icon: 'sun' | 'cloud' | 'rain' | 'snow' | 'fog' } {
   if (code === 0) return { conditions: 'Clear Sky', icon: 'sun' };
   if (code <= 3) return { conditions: 'Partly Cloudy', icon: 'cloud' };
@@ -33,21 +37,68 @@ function getWeatherCondition(code: number): { conditions: string; icon: 'sun' | 
   return { conditions: 'Cloudy', icon: 'cloud' };
 }
 
+function getCachedWeather(): WeatherData | null {
+  try {
+    const cached = localStorage.getItem(WEATHER_CACHE_KEY);
+    if (cached) {
+      const { data, timestamp } = JSON.parse(cached);
+      if (Date.now() - timestamp < CACHE_DURATION) {
+        return { ...data, cached: true };
+      }
+    }
+  } catch {}
+  return null;
+}
+
+function cacheWeather(data: WeatherData) {
+  try {
+    localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({
+      data,
+      timestamp: Date.now(),
+    }));
+  } catch {}
+}
+
+function getSimulatedWeather(): WeatherData {
+  const hour = new Date().getHours();
+  const month = new Date().getMonth();
+  
+  let baseTemp = 22;
+  if (month >= 10 || month <= 2) baseTemp = 18;
+  if (month >= 3 && month <= 5) baseTemp = 26;
+  if (month >= 6 && month <= 9) baseTemp = 24;
+  
+  if (hour >= 6 && hour < 10) baseTemp -= 3;
+  if (hour >= 10 && hour < 14) baseTemp += 4;
+  if (hour >= 14 && hour < 18) baseTemp += 2;
+  if (hour >= 18 || hour < 6) baseTemp -= 4;
+  
+  const temp = baseTemp + Math.floor(Math.random() * 4) - 2;
+  
+  let baseHumidity = 65;
+  if (month >= 6 && month <= 9) baseHumidity = 80;
+  if (month >= 10 || month <= 2) baseHumidity = 55;
+  const humidity = Math.min(90, Math.max(45, baseHumidity + Math.floor(Math.random() * 15) - 7));
+  
+  return {
+    temperature: temp,
+    humidity,
+    conditions: humidity > 75 ? 'Cloudy' : 'Partly Cloudy',
+    icon: humidity > 75 ? 'cloud' : 'sun',
+    windSpeed: 8 + Math.floor(Math.random() * 10),
+    cached: false,
+  };
+}
+
 async function fetchWeatherData(location: GeoLocation): Promise<WeatherData> {
   const { latitude, longitude } = location;
-  
-  // Fetch weather from Open-Meteo (free, no API key required)
   const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`;
   
   const response = await fetch(weatherUrl);
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch weather data');
-  }
+  if (!response.ok) throw new Error('Failed to fetch weather data');
   
   const data = await response.json();
   const current = data.current;
-  
   const { conditions, icon } = getWeatherCondition(current.weather_code);
   
   return {
@@ -74,7 +125,6 @@ async function getLocationName(lat: number, lon: number): Promise<string> {
 function assessTeaWeather(weather: WeatherData, lang: string): TeaWeatherAssessment {
   const { temperature, humidity, conditions } = weather;
   
-  // High humidity + moderate temp = disease risk
   const humidityRisk = humidity > 90;
   const isRainy = conditions.toLowerCase().includes('rain') || conditions.toLowerCase().includes('drizzle');
   
@@ -105,7 +155,6 @@ function assessTeaWeather(weather: WeatherData, lang: string): TeaWeatherAssessm
     return { status: 'moderate', advice: advice[lang as keyof typeof advice] || advice.en };
   }
   
-  // Ideal conditions
   if (temperature >= 18 && temperature <= 30 && humidity >= 60 && humidity <= 85) {
     const advice = {
       en: 'Excellent conditions for tea growth! Good time for plucking and routine maintenance.',
@@ -149,17 +198,20 @@ const statusBgColors = {
   bad: 'bg-weather-bad/10 border-weather-bad/20',
 };
 
-const labels = {
+const uiLabels = {
   en: {
     weather: "Today's Weather",
     temperature: 'Temperature',
     humidity: 'Humidity',
     wind: 'Wind',
     teaAdvice: 'Tea Garden Advice',
-    loading: 'Getting your location...',
-    locationError: 'Location access needed for accurate weather',
+    loading: 'Getting weather...',
+    locationError: 'Location access needed',
     enableLocation: 'Enable Location',
-    retry: 'Retry',
+    offlineMode: 'Offline Mode',
+    offlineDesc: 'Using estimated weather data',
+    cached: 'Cached data',
+    simulated: 'Estimated',
   },
   as: {
     weather: 'আজিৰ বতৰ',
@@ -167,10 +219,13 @@ const labels = {
     humidity: 'আৰ্দ্ৰতা',
     wind: 'বতাহ',
     teaAdvice: 'চাহ বাগিচাৰ পৰামৰ্শ',
-    loading: 'আপোনাৰ অৱস্থান পোৱা হৈছে...',
-    locationError: 'সঠিক বতৰৰ বাবে অৱস্থান অনুমতি প্ৰয়োজন',
+    loading: 'বতৰ পোৱা হৈছে...',
+    locationError: 'অৱস্থান অনুমতি প্ৰয়োজন',
     enableLocation: 'অৱস্থান সক্ষম কৰক',
-    retry: 'পুনৰ চেষ্টা',
+    offlineMode: 'অফলাইন মোড',
+    offlineDesc: 'আনুমানিক বতৰৰ তথ্য ব্যৱহাৰ কৰা হৈছে',
+    cached: 'কেছড ডাটা',
+    simulated: 'আনুমানিক',
   },
   hi: {
     weather: 'आज का मौसम',
@@ -178,59 +233,89 @@ const labels = {
     humidity: 'नमी',
     wind: 'हवा',
     teaAdvice: 'चाय बागान सलाह',
-    loading: 'आपका स्थान प्राप्त हो रहा है...',
-    locationError: 'सटीक मौसम के लिए स्थान की अनुमति आवश्यक',
+    loading: 'मौसम प्राप्त हो रहा है...',
+    locationError: 'स्थान की अनुमति आवश्यक',
     enableLocation: 'स्थान सक्षम करें',
-    retry: 'पुनः प्रयास',
+    offlineMode: 'ऑफ़लाइन मोड',
+    offlineDesc: 'अनुमानित मौसम डेटा का उपयोग',
+    cached: 'कैश्ड डेटा',
+    simulated: 'अनुमानित',
   },
 };
 
 export function WeatherWidget() {
   const { language } = useLanguage();
+  const { isOnline, mode } = useNetwork();
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [assessment, setAssessment] = useState<TeaWeatherAssessment | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [locationName, setLocationName] = useState<string>('');
 
-  const t = labels[language] || labels.en;
-
-  const fetchWeather = async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Get user's location
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 300000, // Cache for 5 minutes
-        });
-      });
-      
-      const { latitude, longitude } = position.coords;
-      
-      // Fetch weather and location name in parallel
-      const [weatherData, locName] = await Promise.all([
-        fetchWeatherData({ latitude, longitude }),
-        getLocationName(latitude, longitude),
-      ]);
-      
-      setWeather(weatherData);
-      setLocationName(locName);
-      setAssessment(assessTeaWeather(weatherData, language));
-    } catch (err) {
-      console.error('Weather fetch error:', err);
-      setError(t.locationError);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const t = uiLabels[language] || uiLabels.en;
 
   useEffect(() => {
+    const fetchWeather = async () => {
+      setLoading(true);
+      
+      // If offline mode, use cached or simulated data
+      if (!isOnline) {
+        const cached = getCachedWeather();
+        if (cached) {
+          setWeather(cached);
+          setLocationName(localStorage.getItem('tea-shield-location-name') || '');
+          setAssessment(assessTeaWeather(cached, language));
+        } else {
+          const simulated = getSimulatedWeather();
+          setWeather(simulated);
+          setLocationName('');
+          setAssessment(assessTeaWeather(simulated, language));
+        }
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 300000,
+          });
+        });
+        
+        const { latitude, longitude } = position.coords;
+        
+        const [weatherData, locName] = await Promise.all([
+          fetchWeatherData({ latitude, longitude }),
+          getLocationName(latitude, longitude),
+        ]);
+        
+        setWeather(weatherData);
+        setLocationName(locName);
+        setAssessment(assessTeaWeather(weatherData, language));
+        
+        // Cache the data
+        cacheWeather(weatherData);
+        localStorage.setItem('tea-shield-location-name', locName);
+      } catch (err) {
+        // Fallback to cached or simulated
+        const cached = getCachedWeather();
+        if (cached) {
+          setWeather(cached);
+          setLocationName(localStorage.getItem('tea-shield-location-name') || '');
+          setAssessment(assessTeaWeather(cached, language));
+        } else {
+          const simulated = getSimulatedWeather();
+          setWeather(simulated);
+          setAssessment(assessTeaWeather(simulated, language));
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchWeather();
-  }, [language]);
+  }, [language, isOnline]);
 
   if (loading) {
     return (
@@ -243,29 +328,11 @@ export function WeatherWidget() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="weather-card p-6 fade-in">
-        <div className="flex flex-col items-center justify-center gap-4 py-4">
-          <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
-            <MapPin className="h-6 w-6 text-muted-foreground" />
-          </div>
-          <p className="text-sm text-muted-foreground text-center">{error}</p>
-          <button 
-            onClick={fetchWeather}
-            className="px-4 py-2 rounded-xl hero-gradient text-primary-foreground text-sm font-semibold hover-lift"
-          >
-            {t.enableLocation}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   if (!weather || !assessment) return null;
 
   const WeatherIcon = weatherIcons[weather.icon];
   const StatusIcon = statusIcons[assessment.status];
+  const isOfflineData = !isOnline || weather.cached;
 
   return (
     <div className="weather-card p-4 space-y-4 fade-in">
@@ -275,16 +342,22 @@ export function WeatherWidget() {
             <Cloud className="h-5 w-5 text-primary" />
             {t.weather}
           </h3>
-          {locationName && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-              <MapPin className="h-3 w-3" />
-              {locationName}
-            </p>
-          )}
+          <div className="flex items-center gap-2 mt-0.5">
+            {locationName && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {locationName}
+              </p>
+            )}
+            {isOfflineData && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground flex items-center gap-1">
+                <WifiOff className="h-2.5 w-2.5" />
+                {weather.cached ? t.cached : t.simulated}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <WeatherIcon className="h-10 w-10 text-accent float" />
-        </div>
+        <WeatherIcon className="h-10 w-10 text-accent float" />
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -324,6 +397,15 @@ export function WeatherWidget() {
           </div>
         </div>
       </div>
+
+      {!isOnline && (
+        <div className="text-center">
+          <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+            <WifiOff className="h-3 w-3" />
+            {t.offlineDesc}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

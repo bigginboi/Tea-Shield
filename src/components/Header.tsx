@@ -1,6 +1,7 @@
 import { Leaf } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { LanguageToggle } from './LanguageToggle';
+import { NetworkIndicator } from './NetworkIndicator';
 
 export function Header() {
   const { t } = useLanguage();
@@ -22,7 +23,10 @@ export function Header() {
           </div>
         </div>
         
-        <LanguageToggle />
+        <div className="flex items-center gap-2">
+          <NetworkIndicator />
+          <LanguageToggle />
+        </div>
       </div>
     </header>
   );
