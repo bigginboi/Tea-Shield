@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Cloud, Sun, CloudRain, Thermometer, Droplets, Wind, Leaf, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Cloud, Sun, CloudRain, Thermometer, Droplets, Wind, AlertTriangle, CheckCircle, MapPin, Loader2, CloudSnow, CloudFog } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface WeatherData {
   temperature: number;
   humidity: number;
   conditions: string;
-  icon: 'sun' | 'cloud' | 'rain';
+  icon: 'sun' | 'cloud' | 'rain' | 'snow' | 'fog';
+  windSpeed: number;
+  locationName?: string;
 }
 
 interface TeaWeatherAssessment {
@@ -14,61 +16,69 @@ interface TeaWeatherAssessment {
   advice: string;
 }
 
-// Simulated weather based on realistic patterns
-function getSimulatedWeather(): WeatherData {
-  const hour = new Date().getHours();
-  const month = new Date().getMonth();
+interface GeoLocation {
+  latitude: number;
+  longitude: number;
+}
+
+// Weather code mapping from Open-Meteo
+function getWeatherCondition(code: number): { conditions: string; icon: 'sun' | 'cloud' | 'rain' | 'snow' | 'fog' } {
+  if (code === 0) return { conditions: 'Clear Sky', icon: 'sun' };
+  if (code <= 3) return { conditions: 'Partly Cloudy', icon: 'cloud' };
+  if (code <= 49) return { conditions: 'Foggy', icon: 'fog' };
+  if (code <= 59) return { conditions: 'Drizzle', icon: 'rain' };
+  if (code <= 69) return { conditions: 'Rainy', icon: 'rain' };
+  if (code <= 79) return { conditions: 'Snow', icon: 'snow' };
+  if (code <= 99) return { conditions: 'Thunderstorm', icon: 'rain' };
+  return { conditions: 'Cloudy', icon: 'cloud' };
+}
+
+async function fetchWeatherData(location: GeoLocation): Promise<WeatherData> {
+  const { latitude, longitude } = location;
   
-  // Base temperature varies by time of day and season
-  let baseTemp = 22;
-  if (month >= 10 || month <= 2) baseTemp = 18; // Winter
-  if (month >= 3 && month <= 5) baseTemp = 26; // Spring/Summer
-  if (month >= 6 && month <= 9) baseTemp = 24; // Monsoon
+  // Fetch weather from Open-Meteo (free, no API key required)
+  const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`;
   
-  // Time of day variation
-  if (hour >= 6 && hour < 10) baseTemp -= 3;
-  if (hour >= 10 && hour < 14) baseTemp += 4;
-  if (hour >= 14 && hour < 18) baseTemp += 2;
-  if (hour >= 18 || hour < 6) baseTemp -= 4;
+  const response = await fetch(weatherUrl);
   
-  // Add some randomness
-  const temp = baseTemp + Math.floor(Math.random() * 6) - 3;
-  
-  // Humidity (higher during monsoon)
-  let baseHumidity = 65;
-  if (month >= 6 && month <= 9) baseHumidity = 85;
-  if (month >= 10 || month <= 2) baseHumidity = 55;
-  const humidity = Math.min(95, Math.max(40, baseHumidity + Math.floor(Math.random() * 20) - 10));
-  
-  // Conditions based on humidity and season
-  let conditions: string;
-  let icon: 'sun' | 'cloud' | 'rain';
-  
-  if (humidity > 80) {
-    conditions = month >= 6 && month <= 9 ? 'Rainy' : 'Overcast';
-    icon = humidity > 85 ? 'rain' : 'cloud';
-  } else if (humidity > 60) {
-    conditions = 'Partly Cloudy';
-    icon = 'cloud';
-  } else {
-    conditions = 'Sunny';
-    icon = 'sun';
+  if (!response.ok) {
+    throw new Error('Failed to fetch weather data');
   }
   
-  return { temperature: temp, humidity, conditions, icon };
+  const data = await response.json();
+  const current = data.current;
+  
+  const { conditions, icon } = getWeatherCondition(current.weather_code);
+  
+  return {
+    temperature: Math.round(current.temperature_2m),
+    humidity: Math.round(current.relative_humidity_2m),
+    conditions,
+    icon,
+    windSpeed: Math.round(current.wind_speed_10m),
+  };
+}
+
+async function getLocationName(lat: number, lon: number): Promise<string> {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`
+    );
+    const data = await response.json();
+    return data.address?.city || data.address?.town || data.address?.village || data.address?.county || 'Your Location';
+  } catch {
+    return 'Your Location';
+  }
 }
 
 function assessTeaWeather(weather: WeatherData, lang: string): TeaWeatherAssessment {
-  const { temperature, humidity } = weather;
+  const { temperature, humidity, conditions } = weather;
   
-  // Ideal conditions for tea: 20-30°C, 70-90% humidity
-  const tempOk = temperature >= 18 && temperature <= 32;
-  const humidityIdeal = humidity >= 60 && humidity <= 85;
-  const humidityRisk = humidity > 90; // High disease risk
+  // High humidity + moderate temp = disease risk
+  const humidityRisk = humidity > 90;
+  const isRainy = conditions.toLowerCase().includes('rain') || conditions.toLowerCase().includes('drizzle');
   
-  // Disease risk assessment
-  if (humidityRisk && temperature > 15 && temperature < 28) {
-    // High humidity + moderate temp = blister blight risk
+  if ((humidityRisk || isRainy) && temperature > 15 && temperature < 28) {
     const advice = {
       en: 'High humidity increases disease risk. Monitor for blister blight. Avoid plucking wet leaves.',
       as: 'উচ্চ আৰ্দ্ৰতাই ৰোগৰ আশংকা বঢ়ায়। ব্লিষ্টাৰ ব্লাইটৰ বাবে নিৰীক্ষণ কৰক। তিতা পাত ছিঙা এৰাই চলক।',
@@ -77,22 +87,26 @@ function assessTeaWeather(weather: WeatherData, lang: string): TeaWeatherAssessm
     return { status: 'bad', advice: advice[lang as keyof typeof advice] || advice.en };
   }
   
-  if (!tempOk) {
+  if (temperature < 15) {
     const advice = {
-      en: temperature < 18 
-        ? 'Cool weather may slow growth. Protect young shoots from frost if temperature drops further.'
-        : 'High temperature may stress plants. Ensure adequate irrigation and shade.',
-      as: temperature < 18
-        ? 'শীতল বতৰে বৃদ্ধি লেহেম কৰিব পাৰে। তাপমাত্ৰা আৰু কমিলে কোমল কোঁহবোৰ তুষাৰৰ পৰা ৰক্ষা কৰক।'
-        : 'উচ্চ তাপমাত্ৰাই গছত চাপ পেলাব পাৰে। পৰ্যাপ্ত জলসিঞ্চন আৰু ছাঁ নিশ্চিত কৰক।',
-      hi: temperature < 18
-        ? 'ठंडे मौसम से विकास धीमा हो सकता है। तापमान और गिरने पर युवा अंकुरों को पाले से बचाएं।'
-        : 'उच्च तापमान से पौधों पर तनाव हो सकता है। पर्याप्त सिंचाई और छाया सुनिश्चित करें।',
+      en: 'Cool weather may slow growth. Protect young shoots from frost if temperature drops further.',
+      as: 'শীতল বতৰে বৃদ্ধি লেহেম কৰিব পাৰে। তাপমাত্ৰা আৰু কমিলে কোমল কোঁহবোৰ তুষাৰৰ পৰা ৰক্ষা কৰক।',
+      hi: 'ठंडे मौसम से विकास धीमा हो सकता है। तापमान और गिरने पर युवा अंकुरों को पाले से बचाएं।',
     };
     return { status: 'moderate', advice: advice[lang as keyof typeof advice] || advice.en };
   }
   
-  if (tempOk && humidityIdeal) {
+  if (temperature > 32) {
+    const advice = {
+      en: 'High temperature may stress plants. Ensure adequate irrigation and shade.',
+      as: 'উচ্চ তাপমাত্ৰাই গছত চাপ পেলাব পাৰে। পৰ্যাপ্ত জলসিঞ্চন আৰু ছাঁ নিশ্চিত কৰক।',
+      hi: 'उच्च तापमान से पौधों पर तनाव हो सकता है। पर्याप्त सिंचाई और छाया सुनिश्चित करें।',
+    };
+    return { status: 'moderate', advice: advice[lang as keyof typeof advice] || advice.en };
+  }
+  
+  // Ideal conditions
+  if (temperature >= 18 && temperature <= 30 && humidity >= 60 && humidity <= 85) {
     const advice = {
       en: 'Excellent conditions for tea growth! Good time for plucking and routine maintenance.',
       as: 'চাহ বৃদ্ধিৰ বাবে উৎকৃষ্ট অৱস্থা! ছিঙা আৰু নিয়মীয়া ৰক্ষণাবেক্ষণৰ বাবে ভাল সময়।',
@@ -113,6 +127,8 @@ const weatherIcons = {
   sun: Sun,
   cloud: Cloud,
   rain: CloudRain,
+  snow: CloudSnow,
+  fog: CloudFog,
 };
 
 const statusIcons = {
@@ -133,16 +149,118 @@ const statusBgColors = {
   bad: 'bg-weather-bad/10 border-weather-bad/20',
 };
 
+const labels = {
+  en: {
+    weather: "Today's Weather",
+    temperature: 'Temperature',
+    humidity: 'Humidity',
+    wind: 'Wind',
+    teaAdvice: 'Tea Garden Advice',
+    loading: 'Getting your location...',
+    locationError: 'Location access needed for accurate weather',
+    enableLocation: 'Enable Location',
+    retry: 'Retry',
+  },
+  as: {
+    weather: 'আজিৰ বতৰ',
+    temperature: 'তাপমাত্ৰা',
+    humidity: 'আৰ্দ্ৰতা',
+    wind: 'বতাহ',
+    teaAdvice: 'চাহ বাগিচাৰ পৰামৰ্শ',
+    loading: 'আপোনাৰ অৱস্থান পোৱা হৈছে...',
+    locationError: 'সঠিক বতৰৰ বাবে অৱস্থান অনুমতি প্ৰয়োজন',
+    enableLocation: 'অৱস্থান সক্ষম কৰক',
+    retry: 'পুনৰ চেষ্টা',
+  },
+  hi: {
+    weather: 'आज का मौसम',
+    temperature: 'तापमान',
+    humidity: 'नमी',
+    wind: 'हवा',
+    teaAdvice: 'चाय बागान सलाह',
+    loading: 'आपका स्थान प्राप्त हो रहा है...',
+    locationError: 'सटीक मौसम के लिए स्थान की अनुमति आवश्यक',
+    enableLocation: 'स्थान सक्षम करें',
+    retry: 'पुनः प्रयास',
+  },
+};
+
 export function WeatherWidget() {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [assessment, setAssessment] = useState<TeaWeatherAssessment | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [locationName, setLocationName] = useState<string>('');
+
+  const t = labels[language] || labels.en;
+
+  const fetchWeather = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Get user's location
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 300000, // Cache for 5 minutes
+        });
+      });
+      
+      const { latitude, longitude } = position.coords;
+      
+      // Fetch weather and location name in parallel
+      const [weatherData, locName] = await Promise.all([
+        fetchWeatherData({ latitude, longitude }),
+        getLocationName(latitude, longitude),
+      ]);
+      
+      setWeather(weatherData);
+      setLocationName(locName);
+      setAssessment(assessTeaWeather(weatherData, language));
+    } catch (err) {
+      console.error('Weather fetch error:', err);
+      setError(t.locationError);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const data = getSimulatedWeather();
-    setWeather(data);
-    setAssessment(assessTeaWeather(data, language));
+    fetchWeather();
   }, [language]);
+
+  if (loading) {
+    return (
+      <div className="weather-card p-6 fade-in">
+        <div className="flex flex-col items-center justify-center gap-3 py-4">
+          <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          <p className="text-sm text-muted-foreground font-medium">{t.loading}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="weather-card p-6 fade-in">
+        <div className="flex flex-col items-center justify-center gap-4 py-4">
+          <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
+            <MapPin className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <p className="text-sm text-muted-foreground text-center">{error}</p>
+          <button 
+            onClick={fetchWeather}
+            className="px-4 py-2 rounded-xl hero-gradient text-primary-foreground text-sm font-semibold hover-lift"
+          >
+            {t.enableLocation}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!weather || !assessment) return null;
 
@@ -152,31 +270,45 @@ export function WeatherWidget() {
   return (
     <div className="weather-card p-4 space-y-4 fade-in">
       <div className="flex items-center justify-between">
-        <h3 className="font-display font-semibold text-lg flex items-center gap-2">
-          <Cloud className="h-5 w-5 text-primary" />
-          {t('weather')}
-        </h3>
+        <div>
+          <h3 className="font-display font-semibold text-lg flex items-center gap-2">
+            <Cloud className="h-5 w-5 text-primary" />
+            {t.weather}
+          </h3>
+          {locationName && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+              <MapPin className="h-3 w-3" />
+              {locationName}
+            </p>
+          )}
+        </div>
         <div className="flex items-center gap-2">
-          <WeatherIcon className="h-8 w-8 text-accent float" />
+          <WeatherIcon className="h-10 w-10 text-accent float" />
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-secondary/50 rounded-xl p-3 text-center hover-lift">
           <Thermometer className="h-5 w-5 mx-auto text-disease-rust mb-1" />
-          <p className="text-xs text-muted-foreground">{t('temperature')}</p>
+          <p className="text-xs text-muted-foreground">{t.temperature}</p>
           <p className="font-bold text-lg">{weather.temperature}°C</p>
         </div>
         <div className="bg-secondary/50 rounded-xl p-3 text-center hover-lift">
           <Droplets className="h-5 w-5 mx-auto text-accent mb-1" />
-          <p className="text-xs text-muted-foreground">{t('humidity')}</p>
+          <p className="text-xs text-muted-foreground">{t.humidity}</p>
           <p className="font-bold text-lg">{weather.humidity}%</p>
         </div>
         <div className="bg-secondary/50 rounded-xl p-3 text-center hover-lift">
           <Wind className="h-5 w-5 mx-auto text-muted-foreground mb-1" />
-          <p className="text-xs text-muted-foreground">{t('conditions')}</p>
-          <p className="font-bold text-sm">{weather.conditions}</p>
+          <p className="text-xs text-muted-foreground">{t.wind}</p>
+          <p className="font-bold text-sm">{weather.windSpeed} km/h</p>
         </div>
+      </div>
+
+      <div className="text-center">
+        <span className="inline-block px-3 py-1 rounded-full bg-secondary text-sm font-medium text-foreground">
+          {weather.conditions}
+        </span>
       </div>
 
       <div className={`p-4 rounded-xl border ${statusBgColors[assessment.status]} transition-all duration-300`}>
@@ -184,7 +316,7 @@ export function WeatherWidget() {
           <StatusIcon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${statusColors[assessment.status]}`} />
           <div className="space-y-1">
             <p className={`font-semibold text-sm ${statusColors[assessment.status]}`}>
-              {t('teaAdvice')}
+              {t.teaAdvice}
             </p>
             <p className="text-sm text-muted-foreground leading-relaxed">
               {assessment.advice}
