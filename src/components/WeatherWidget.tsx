@@ -302,21 +302,23 @@ export function WeatherWidget() {
       </div>
 
       {/* 3-Day Forecast */}
-      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/20">
-        {forecast.map((day, i) => {
-          const DayIcon = weatherIcons[day.icon] || Cloud;
-          return (
-            <div key={i} className="text-center py-2">
-              <p className="text-xs text-white/70 font-medium mb-1">{day.day}</p>
-              <p className="text-lg font-bold text-white">{day.temp}°</p>
-              <div className="flex items-center justify-center gap-1 text-white/70 mt-1">
-                <span className="text-[10px]">{day.rainChance}%</span>
-                <DayIcon className="h-3 w-3" />
+      {forecast && forecast.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/20">
+          {forecast.map((day, i) => {
+            const DayIcon = weatherIcons[day.icon] || Cloud;
+            return (
+              <div key={i} className="text-center py-2">
+                <p className="text-xs text-white/70 font-medium mb-1">{day.day}</p>
+                <p className="text-lg font-bold text-white">{day.temp}°</p>
+                <div className="flex items-center justify-center gap-1 text-white/70 mt-1">
+                  <span className="text-[10px]">{day.rainChance}%</span>
+                  <DayIcon className="h-3 w-3" />
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
