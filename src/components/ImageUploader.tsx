@@ -3,8 +3,23 @@ import { Camera, Upload, X, Leaf, Brain } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { AnalysisResult, DiseaseType, SeverityLevel } from '@/lib/diseaseAnalyzer';
-import { supabase } from '@/integrations/supabase/client';
+import { analyzeTeaLeafImage } from '@/lib/mlAnalyzer';
 import { toast } from 'sonner';
+
+// Lazy load supabase to avoid crash if env vars are missing
+let supabaseClient: any = null;
+const getSupabase = async () => {
+  if (!supabaseClient) {
+    try {
+      const { supabase } = await import('@/integrations/supabase/client');
+      supabaseClient = supabase;
+    } catch (e) {
+      console.warn('Supabase client not available, using local analysis');
+      return null;
+    }
+  }
+  return supabaseClient;
+};
 
 interface ImageUploaderProps {
   onAnalysisComplete: (result: AnalysisResult, imageUrl: string) => void;
@@ -78,15 +93,69 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
     setCameraReady(true);
   }, []);
 
+  const analyzeWithLocalML = useCallback((imageBase64: string, imageUrl: string) => {
+    setAnalysisStatus('Analyzing with local ML...');
+    const startTime = performance.now();
+    
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const maxSize = 512;
+      let width = img.width;
+      let height = img.height;
+      
+      if (width > maxSize || height > maxSize) {
+        const ratio = Math.min(maxSize / width, maxSize / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        setIsAnalyzing(false);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      const imageData = ctx.getImageData(0, 0, width, height);
+      const result = analyzeTeaLeafImage(imageData);
+      
+      console.log('Local ML Analysis complete:', (performance.now() - startTime).toFixed(0), 'ms');
+      onAnalysisComplete(result, imageUrl);
+      setIsAnalyzing(false);
+    };
+    img.onerror = () => {
+      toast.error('Failed to process image');
+      setIsAnalyzing(false);
+    };
+    img.src = imageBase64;
+  }, [onAnalysisComplete]);
+
   const analyzeWithAI = useCallback(async (imageBase64: string, imageUrl: string) => {
-    setAnalysisStatus('Sending to AI model...');
+    setAnalysisStatus('Connecting to AI...');
     
     const startTime = performance.now();
     
     try {
-      const { data, error } = await supabase.functions.invoke<AIAnalysisResponse>('analyze-leaf', {
+      // Try to get Supabase client
+      const supabase = await getSupabase();
+      
+      if (!supabase) {
+        console.log('Supabase not available, falling back to local ML');
+        setAnalysisStatus('Using local analysis...');
+        analyzeWithLocalML(imageBase64, imageUrl);
+        return;
+      }
+
+      setAnalysisStatus('Sending to AI model...');
+      
+      const response = await supabase.functions.invoke('analyze-leaf', {
         body: { imageBase64 }
       });
+      
+      const { data, error } = response as { data: AIAnalysisResponse | null; error: Error | null };
 
       if (error) {
         console.error('Edge function error:', error);
@@ -124,6 +193,7 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
       };
 
       onAnalysisComplete(result, imageUrl);
+      setIsAnalyzing(false);
       
     } catch (err) {
       console.error('AI analysis error:', err);
@@ -131,15 +201,18 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
       
       if (message.includes('Rate limit')) {
         toast.error('Too many requests. Please wait a moment and try again.');
+        setIsAnalyzing(false);
       } else if (message.includes('credits')) {
         toast.error('AI credits exhausted. Please add credits to continue.');
+        setIsAnalyzing(false);
       } else {
-        toast.error(`Analysis failed: ${message}`);
+        // Fallback to local analysis
+        console.log('AI failed, falling back to local ML');
+        toast.info('Using local analysis');
+        analyzeWithLocalML(imageBase64, imageUrl);
       }
-      
-      setIsAnalyzing(false);
     }
-  }, [onAnalysisComplete]);
+  }, [onAnalysisComplete, analyzeWithLocalML]);
 
   const capturePhoto = useCallback(() => {
     if (!videoRef.current) return;
