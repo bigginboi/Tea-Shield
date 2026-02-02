@@ -19,11 +19,11 @@ interface HistoryPageProps {
 }
 
 const diseaseColors: Record<DiseaseType, string> = {
-  redLeafSpot: 'bg-disease-rust',
+  redRust: 'bg-disease-rust',
   algalLeafSpot: 'bg-primary/70',
   birdsEyeSpot: 'bg-amber-500',
   grayBlight: 'bg-gray-500',
-  whiteSpot: 'bg-disease-blister',
+  blisterBlight: 'bg-disease-blister',
   anthracnose: 'bg-disease-brown',
   brownBlight: 'bg-disease-brown',
   healthy: 'bg-disease-healthy',
@@ -31,11 +31,11 @@ const diseaseColors: Record<DiseaseType, string> = {
 };
 
 const diseaseIcons: Record<DiseaseType, React.ReactNode> = {
-  redLeafSpot: <AlertTriangle className="h-4 w-4" />,
+  redRust: <AlertTriangle className="h-4 w-4" />,
   algalLeafSpot: <AlertTriangle className="h-4 w-4" />,
   birdsEyeSpot: <AlertTriangle className="h-4 w-4" />,
   grayBlight: <AlertTriangle className="h-4 w-4" />,
-  whiteSpot: <AlertTriangle className="h-4 w-4" />,
+  blisterBlight: <AlertTriangle className="h-4 w-4" />,
   anthracnose: <AlertTriangle className="h-4 w-4" />,
   brownBlight: <AlertTriangle className="h-4 w-4" />,
   healthy: <CheckCircle className="h-4 w-4" />,
@@ -133,7 +133,7 @@ export function HistoryPage({ history, onClearHistory, onSelectItem }: HistoryPa
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${diseaseColors[item.disease]} ${item.disease === 'whiteSpot' ? 'text-foreground' : 'text-primary-foreground'}`}>
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${diseaseColors[item.disease]} ${item.disease === 'blisterBlight' ? 'text-foreground' : 'text-primary-foreground'}`}>
                     {diseaseIcons[item.disease]}
                     {getDiseaseName(item.disease)}
                   </span>

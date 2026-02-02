@@ -57,11 +57,11 @@ export function analyzeTeaLeafImage(imageData: ImageData): AnalysisResult {
   let leafPixelCount = 0;
   let healthyCount = 0;
 
-  let redLeafSpotCount = 0;
+  let redRustCount = 0;
   let algalLeafSpotCount = 0;
   let birdsEyeSpotCount = 0;
   let grayBlightCount = 0;
-  let whiteSpotCount = 0;
+  let blisterBlightCount = 0;
   let anthracnoseCount = 0;
   let brownBlightCount = 0;
 
@@ -81,9 +81,9 @@ export function analyzeTeaLeafImage(imageData: ImageData): AnalysisResult {
       continue;
     }
 
-    // Red Leaf Spot
+    // Red Rust - Reddish-brown pustules, rusty powdery appearance
     if (h >= 0 && h <= 28 && s >= 35 && v >= 18 && v <= 75 && r > g && r >= b * 0.85) {
-      redLeafSpotCount++;
+      redRustCount++;
     }
 
     // Anthracnose
@@ -96,10 +96,10 @@ export function analyzeTeaLeafImage(imageData: ImageData): AnalysisResult {
       brownBlightCount++;
     }
 
-    // White Spot / Blister Blight
+    // Blister Blight (White Spot) - Pale white/cream blisters
     if (v >= 78 && s <= 18) {
       const isNearWhite = Math.abs(r - g) < 25 && Math.abs(g - b) < 25;
-      if (isNearWhite) whiteSpotCount++;
+      if (isNearWhite) blisterBlightCount++;
     }
 
     // Gray Blight
@@ -124,11 +124,11 @@ export function analyzeTeaLeafImage(imageData: ImageData): AnalysisResult {
   if (sampleRate > 1) {
     leafPixelCount *= sampleRate;
     healthyCount *= sampleRate;
-    redLeafSpotCount *= sampleRate;
+    redRustCount *= sampleRate;
     algalLeafSpotCount *= sampleRate;
     birdsEyeSpotCount *= sampleRate;
     grayBlightCount *= sampleRate;
-    whiteSpotCount *= sampleRate;
+    blisterBlightCount *= sampleRate;
     anthracnoseCount *= sampleRate;
     brownBlightCount *= sampleRate;
   }
@@ -136,11 +136,11 @@ export function analyzeTeaLeafImage(imageData: ImageData): AnalysisResult {
   const processingTimeMs = performance.now() - startTime;
 
   const scores: Record<DiseaseType, number> = {
-    redLeafSpot: redLeafSpotCount,
+    redRust: redRustCount,
     algalLeafSpot: algalLeafSpotCount,
     birdsEyeSpot: birdsEyeSpotCount,
     grayBlight: grayBlightCount,
-    whiteSpot: whiteSpotCount,
+    blisterBlight: blisterBlightCount,
     anthracnose: anthracnoseCount,
     brownBlight: brownBlightCount,
     healthy: healthyCount,
@@ -167,11 +167,11 @@ export function analyzeTeaLeafImage(imageData: ImageData): AnalysisResult {
   type DiseaseClass = Exclude<DiseaseType, 'healthy' | 'uncertain'>;
 
   const diseaseRatios: Array<[DiseaseClass, number]> = [
-    ['redLeafSpot', clamp(redLeafSpotCount / leafPixelCount, 0, 1)],
+    ['redRust', clamp(redRustCount / leafPixelCount, 0, 1)],
     ['algalLeafSpot', clamp(algalLeafSpotCount / leafPixelCount, 0, 1)],
     ['birdsEyeSpot', clamp(birdsEyeSpotCount / leafPixelCount, 0, 1)],
     ['grayBlight', clamp(grayBlightCount / leafPixelCount, 0, 1)],
-    ['whiteSpot', clamp(whiteSpotCount / leafPixelCount, 0, 1)],
+    ['blisterBlight', clamp(blisterBlightCount / leafPixelCount, 0, 1)],
     ['anthracnose', clamp(anthracnoseCount / leafPixelCount, 0, 1)],
     ['brownBlight', clamp(brownBlightCount / leafPixelCount, 0, 1)],
   ];

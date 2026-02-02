@@ -14,11 +14,11 @@ import { AnalysisResult, DiseaseType } from '@/lib/diseaseAnalyzer';
 
 // Helper to create empty scores object
 const createEmptyScores = (): Record<DiseaseType, number> => ({
-  redLeafSpot: 0,
+  redRust: 0,
   algalLeafSpot: 0,
   birdsEyeSpot: 0,
   grayBlight: 0,
-  whiteSpot: 0,
+  blisterBlight: 0,
   anthracnose: 0,
   brownBlight: 0,
   healthy: 0,
