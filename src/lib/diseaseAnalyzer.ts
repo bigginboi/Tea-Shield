@@ -1,4 +1,28 @@
-export type DiseaseType = 'redRust' | 'brownBlight' | 'blisterBlight' | 'healthy' | 'uncertain';
+/**
+ * Tea Leaf Disease Analyzer
+ * 
+ * Uses rule-based HSV color analysis to detect 7 common tea diseases:
+ * - Red Leaf Spot
+ * - Algal Leaf Spot
+ * - Bird's Eye Spot
+ * - Gray Blight
+ * - White Spot / Blister Blight
+ * - Anthracnose
+ * - Brown Blight
+ * 
+ * Based on the Kaggle dataset: https://www.kaggle.com/datasets/shashwatwork/identifying-disease-in-tea-leafs
+ */
+
+export type DiseaseType = 
+  | 'redLeafSpot'      // Red/rust colored spots
+  | 'algalLeafSpot'    // Green-gray algal growth
+  | 'birdsEyeSpot'     // Small circular spots with light center
+  | 'grayBlight'       // Gray/silver patches
+  | 'whiteSpot'        // White/pale spots (blister blight)
+  | 'anthracnose'      // Dark brown/black lesions
+  | 'brownBlight'      // Brown necrotic areas
+  | 'healthy'
+  | 'uncertain';
 
 export type SeverityLevel = 'low' | 'medium' | 'high';
 
@@ -17,6 +41,12 @@ interface HSV {
   h: number; // 0-360
   s: number; // 0-100
   v: number; // 0-100
+}
+
+interface RGB {
+  r: number;
+  g: number;
+  b: number;
 }
 
 // Convert RGB to HSV
@@ -50,53 +80,90 @@ function rgbToHsv(r: number, g: number, b: number): HSV {
   return { h, s, v };
 }
 
-// Check if pixel is likely part of a leaf (green-dominant)
+// Check if pixel is likely part of a leaf
 function isLeafPixel(r: number, g: number, b: number): boolean {
   const hsv = rgbToHsv(r, g, b);
   
-  // Leaf green typically has hue between 60-180, with reasonable saturation
-  // Also include some yellow-green and darker greens
-  const isGreenHue = hsv.h >= 40 && hsv.h <= 180;
-  const hasSaturation = hsv.s >= 10;
-  const hasBrightness = hsv.v >= 10 && hsv.v <= 95;
+  // Exclude very dark (background) and very bright (overexposed) pixels
+  if (hsv.v < 8 || hsv.v > 98) return false;
   
-  // Also allow brown/diseased areas as part of leaf
-  const isBrownish = hsv.h >= 0 && hsv.h <= 50 && hsv.s >= 15 && hsv.v >= 10 && hsv.v <= 70;
-  const isReddish = hsv.h >= 0 && hsv.h <= 30 && hsv.s >= 20;
-  const isWhitish = hsv.s <= 30 && hsv.v >= 60;
+  // Exclude very desaturated gray (background)
+  if (hsv.s < 5 && hsv.v > 80) return false;
   
-  return (isGreenHue && hasSaturation && hasBrightness) || isBrownish || isReddish || isWhitish;
+  // Green leaves: Hue 40-160, reasonable saturation
+  const isGreen = hsv.h >= 40 && hsv.h <= 160 && hsv.s >= 10;
+  
+  // Diseased areas can be brown, red, gray, white
+  const isBrown = hsv.h >= 0 && hsv.h <= 50 && hsv.s >= 10 && hsv.v >= 10 && hsv.v <= 75;
+  const isRed = hsv.h >= 0 && hsv.h <= 25 && hsv.s >= 20;
+  const isGray = hsv.s <= 25 && hsv.v >= 20 && hsv.v <= 80;
+  const isWhitish = hsv.s <= 30 && hsv.v >= 55;
+  
+  return isGreen || isBrown || isRed || isGray || isWhitish;
 }
 
-// Disease classification rules based on HSV
-function classifyPixel(hsv: HSV): DiseaseType {
+// Disease classification based on HSV color analysis
+function classifyPixel(rgb: RGB, hsv: HSV): DiseaseType {
   const { h, s, v } = hsv;
+  const { r, g, b } = rgb;
 
-  // Red Rust: Reddish/rust-brown hue, high saturation, medium brightness
-  // Hue: 0-30 (red to orange-brown), Saturation: 40+, Brightness: 30-70
-  if ((h >= 0 && h <= 35) && s >= 35 && v >= 25 && v <= 75) {
-    return 'redRust';
+  // Red Leaf Spot: Bright red/rust colored spots
+  // Hue: 0-20 (red range), High saturation, medium-high brightness
+  if ((h >= 0 && h <= 20) && s >= 40 && v >= 30 && v <= 80) {
+    return 'redLeafSpot';
   }
 
-  // Brown Blight: Dark brown or blackish spots, medium saturation, low brightness
-  // Hue: 10-50 (brown range), Saturation: 20-60, Brightness: 10-40
-  if ((h >= 10 && h <= 60) && s >= 15 && s <= 70 && v >= 5 && v <= 45) {
+  // Algal Leaf Spot: Greenish-gray with slightly bluish tint
+  // Distinct from healthy green - more grayish/silvery
+  if (h >= 80 && h <= 180 && s >= 8 && s <= 35 && v >= 30 && v <= 70) {
+    // Check for grayish-green characteristic of algal growth
+    if (Math.abs(g - b) < 30 && g > r) {
+      return 'algalLeafSpot';
+    }
+  }
+
+  // Bird's Eye Spot: Small spots with light tan/cream center
+  // Light center: low saturation, high value
+  if (s <= 25 && v >= 60 && v <= 90 && h >= 20 && h <= 50) {
+    return 'birdsEyeSpot';
+  }
+
+  // Gray Blight: Silver/gray patches
+  // Very low saturation, medium brightness
+  if (s <= 20 && v >= 35 && v <= 75) {
+    return 'grayBlight';
+  }
+
+  // White Spot / Blister Blight: Pale/white raised spots
+  // Very low saturation, high brightness
+  if (s <= 25 && v >= 70) {
+    return 'whiteSpot';
+  }
+
+  // Anthracnose: Dark brown to black lesions
+  // Brown-black hue, low-medium saturation, low brightness
+  if (h >= 0 && h <= 40 && s >= 15 && s <= 60 && v >= 5 && v <= 35) {
+    return 'anthracnose';
+  }
+
+  // Brown Blight: Brown necrotic areas
+  // Brown hue, medium saturation, medium-low brightness
+  if (h >= 15 && h <= 55 && s >= 20 && s <= 70 && v >= 15 && v <= 55) {
     return 'brownBlight';
   }
 
-  // Blister/White Blight: Very low saturation, high brightness, pale/whitish
-  // Any hue, Saturation: 0-25, Brightness: 65+
-  if (s <= 28 && v >= 60) {
-    return 'blisterBlight';
-  }
-
   // Healthy: Green leaf tissue
-  // Hue: 60-160 (green range), Saturation: 20+, Brightness: 20-80
-  if (h >= 50 && h <= 165 && s >= 15 && v >= 15 && v <= 85) {
+  // Green hue, good saturation, medium-high brightness
+  if (h >= 50 && h <= 160 && s >= 20 && v >= 20 && v <= 85) {
     return 'healthy';
   }
 
-  return 'healthy'; // Default to healthy for ambiguous pixels
+  // Default to healthy for ambiguous green-ish pixels
+  if (h >= 40 && h <= 170 && g > r && g > b) {
+    return 'healthy';
+  }
+
+  return 'healthy';
 }
 
 export async function analyzeLeafImage(imageData: ImageData): Promise<AnalysisResult> {
@@ -104,11 +171,15 @@ export async function analyzeLeafImage(imageData: ImageData): Promise<AnalysisRe
   
   const { data, width, height } = imageData;
   
-  // Initialize scores
+  // Initialize scores for all disease types
   const scores: Record<DiseaseType, number> = {
-    redRust: 0,
+    redLeafSpot: 0,
+    algalLeafSpot: 0,
+    birdsEyeSpot: 0,
+    grayBlight: 0,
+    whiteSpot: 0,
+    anthracnose: 0,
     brownBlight: 0,
-    blisterBlight: 0,
     healthy: 0,
     uncertain: 0,
   };
@@ -132,7 +203,7 @@ export async function analyzeLeafImage(imageData: ImageData): Promise<AnalysisRe
     leafPixelCount++;
 
     const hsv = rgbToHsv(r, g, b);
-    const classification = classifyPixel(hsv);
+    const classification = classifyPixel({ r, g, b }, hsv);
     
     scores[classification]++;
     
@@ -141,11 +212,10 @@ export async function analyzeLeafImage(imageData: ImageData): Promise<AnalysisRe
     }
   }
 
-  // Calculate result
   const processingTimeMs = performance.now() - startTime;
 
-  // If no leaf pixels found
-  if (leafPixelCount < 100) {
+  // If insufficient leaf pixels detected
+  if (leafPixelCount < 500) {
     return {
       disease: 'uncertain',
       severity: 'low',
@@ -158,42 +228,59 @@ export async function analyzeLeafImage(imageData: ImageData): Promise<AnalysisRe
     };
   }
 
-  // Find dominant disease
-  const diseaseScores = {
-    redRust: scores.redRust,
-    brownBlight: scores.brownBlight,
-    blisterBlight: scores.blisterBlight,
-    healthy: scores.healthy,
-  };
+  // Find dominant disease (excluding healthy and uncertain)
+  const diseaseOnlyScores = { ...scores };
+  delete (diseaseOnlyScores as any).healthy;
+  delete (diseaseOnlyScores as any).uncertain;
 
-  const sortedDiseases = Object.entries(diseaseScores)
+  const sortedDiseases = Object.entries(diseaseOnlyScores)
     .sort(([, a], [, b]) => b - a) as [DiseaseType, number][];
 
-  const [topDisease, topScore] = sortedDiseases[0];
-  const [, secondScore] = sortedDiseases[1];
+  const [topDisease, topDiseaseScore] = sortedDiseases[0];
+  const healthyScore = scores.healthy;
+  const totalDiseaseScore = infectedPixelCount;
 
-  // Calculate confidence based on dominance margin
-  const dominanceRatio = topScore / (topScore + secondScore + 1);
-  const pixelCoverageRatio = leafPixelCount / (width * height);
-  
-  // Confidence factors:
-  // 1. How dominant is the top disease (0-50%)
-  // 2. Pixel coverage quality (0-30%)
-  // 3. Minimum viable pixel count (0-20%)
-  const dominanceConfidence = Math.min(dominanceRatio * 60, 60);
-  const coverageConfidence = Math.min(pixelCoverageRatio * 100, 25);
-  const countConfidence = Math.min(leafPixelCount / 5000, 1) * 15;
-  
-  let confidence = Math.round(dominanceConfidence + coverageConfidence + countConfidence);
-  confidence = Math.min(Math.max(confidence, 0), 100);
+  // Determine if leaf is primarily healthy
+  const healthyRatio = healthyScore / leafPixelCount;
+  const diseaseRatio = totalDiseaseScore / leafPixelCount;
 
-  // Determine if result is certain enough
-  const isUncertain = confidence < 40 || dominanceRatio < 0.45;
+  // Calculate confidence
+  let confidence: number;
+  let resultDisease: DiseaseType;
+
+  if (healthyRatio > 0.85) {
+    // Primarily healthy leaf
+    resultDisease = 'healthy';
+    confidence = Math.round(healthyRatio * 100);
+  } else if (diseaseRatio > 0.1) {
+    // Significant disease presence
+    resultDisease = topDisease;
+    
+    // Confidence based on how dominant the disease is
+    const dominanceRatio = topDiseaseScore / (totalDiseaseScore + 1);
+    const coverageQuality = Math.min(leafPixelCount / 10000, 1);
+    
+    confidence = Math.round(
+      (dominanceRatio * 50) + 
+      (diseaseRatio * 30) + 
+      (coverageQuality * 20)
+    );
+    confidence = Math.min(Math.max(confidence, 15), 95);
+  } else {
+    // Ambiguous - low disease signal
+    resultDisease = healthyRatio > 0.5 ? 'healthy' : 'uncertain';
+    confidence = Math.round(healthyRatio * 60);
+  }
+
+  // Check if result is too uncertain
+  if (confidence < 30 && resultDisease !== 'healthy') {
+    resultDisease = 'uncertain';
+  }
+
+  // Calculate severity percentage
+  const severityPercentage = Math.round((infectedPixelCount / leafPixelCount) * 1000) / 10;
   
-  // Calculate severity
-  const severityPercentage = (infectedPixelCount / leafPixelCount) * 100;
   let severity: SeverityLevel;
-  
   if (severityPercentage < 15) {
     severity = 'low';
   } else if (severityPercentage < 40) {
@@ -202,8 +289,8 @@ export async function analyzeLeafImage(imageData: ImageData): Promise<AnalysisRe
     severity = 'high';
   }
 
-  // If healthy is dominant, severity should be low
-  if (topDisease === 'healthy') {
+  // If healthy, reset severity
+  if (resultDisease === 'healthy') {
     return {
       disease: 'healthy',
       severity: 'low',
@@ -217,9 +304,9 @@ export async function analyzeLeafImage(imageData: ImageData): Promise<AnalysisRe
   }
 
   return {
-    disease: isUncertain ? 'uncertain' : topDisease,
+    disease: resultDisease,
     severity,
-    severityPercentage: Math.round(severityPercentage * 10) / 10,
+    severityPercentage,
     confidence,
     scores,
     leafPixelCount,
@@ -233,3 +320,52 @@ export function getConfidenceLevel(confidence: number): 'high' | 'medium' | 'low
   if (confidence >= 50) return 'medium';
   return 'low';
 }
+
+// Human-readable disease names
+export const diseaseNames: Record<DiseaseType, { en: string; as: string; hi: string }> = {
+  redLeafSpot: {
+    en: 'Red Leaf Spot',
+    as: 'ৰঙা পাতৰ দাগ',
+    hi: 'लाल पत्ती धब्बा',
+  },
+  algalLeafSpot: {
+    en: 'Algal Leaf Spot',
+    as: 'শেলাই পাতৰ দাগ',
+    hi: 'शैवाल पत्ती धब्बा',
+  },
+  birdsEyeSpot: {
+    en: "Bird's Eye Spot",
+    as: 'চৰাইৰ চকুৰ দাগ',
+    hi: 'बर्ड्स आई स्पॉट',
+  },
+  grayBlight: {
+    en: 'Gray Blight',
+    as: 'ধূসৰ ব্লাইট',
+    hi: 'ग्रे ब्लाइट',
+  },
+  whiteSpot: {
+    en: 'White Spot / Blister Blight',
+    as: 'বগা দাগ / ব্লিষ্টাৰ ব্লাইট',
+    hi: 'सफेद धब्बा / ब्लिस्टर ब्लाइट',
+  },
+  anthracnose: {
+    en: 'Anthracnose',
+    as: 'এন্থ্ৰাকন\'জ',
+    hi: 'एन्थ्रेक्नोज',
+  },
+  brownBlight: {
+    en: 'Brown Blight',
+    as: 'বাদামী ব্লাইট',
+    hi: 'ब्राउन ब्लाइट',
+  },
+  healthy: {
+    en: 'Healthy',
+    as: 'স্বাস্থ্যকৰ',
+    hi: 'स्वस्थ',
+  },
+  uncertain: {
+    en: 'Uncertain',
+    as: 'অনিশ্চিত',
+    hi: 'अनिश्चित',
+  },
+};

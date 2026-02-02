@@ -10,7 +10,20 @@ import { WeatherWidget } from '@/components/WeatherWidget';
 import { BottomNav, TabId } from '@/components/BottomNav';
 import { HistoryPage, HistoryItem } from '@/components/HistoryPage';
 import { SettingsPage } from '@/components/SettingsPage';
-import { AnalysisResult } from '@/lib/diseaseAnalyzer';
+import { AnalysisResult, DiseaseType } from '@/lib/diseaseAnalyzer';
+
+// Helper to create empty scores object
+const createEmptyScores = (): Record<DiseaseType, number> => ({
+  redLeafSpot: 0,
+  algalLeafSpot: 0,
+  birdsEyeSpot: 0,
+  grayBlight: 0,
+  whiteSpot: 0,
+  anthracnose: 0,
+  brownBlight: 0,
+  healthy: 0,
+  uncertain: 0,
+});
 
 const Index = () => {
   const { t } = useLanguage();
@@ -56,7 +69,7 @@ const Index = () => {
       confidence: item.confidence,
       severityPercentage: item.severityPercentage,
       severity: item.severityPercentage < 15 ? 'low' : item.severityPercentage < 40 ? 'medium' : 'high',
-      scores: { redRust: 0, brownBlight: 0, blisterBlight: 0, healthy: 0, uncertain: 0 },
+      scores: createEmptyScores(),
       leafPixelCount: 0,
       infectedPixelCount: 0,
       processingTimeMs: 0,

@@ -19,10 +19,14 @@ export const translations = {
     step3Title: 'Results',
     step3Desc: 'Get diagnosis with treatment plan',
     
-    // Diseases
-    redRust: 'Red Rust',
+    // Diseases (7 from Kaggle dataset + healthy + uncertain)
+    redLeafSpot: 'Red Leaf Spot',
+    algalLeafSpot: 'Algal Leaf Spot',
+    birdsEyeSpot: "Bird's Eye Spot",
+    grayBlight: 'Gray Blight',
+    whiteSpot: 'White Spot / Blister Blight',
+    anthracnose: 'Anthracnose',
     brownBlight: 'Brown Blight',
-    blisterBlight: 'Blister / White Blight',
     healthy: 'Healthy',
     uncertain: 'Uncertain',
     
@@ -108,9 +112,13 @@ export const translations = {
     step3Desc: 'চিকিৎসা পৰিকল্পনাসহ নিদান পাওক',
     
     // Diseases
-    redRust: 'ৰঙা মামৰ',
+    redLeafSpot: 'ৰঙা পাতৰ দাগ',
+    algalLeafSpot: 'শেলাই পাতৰ দাগ',
+    birdsEyeSpot: 'চৰাইৰ চকুৰ দাগ',
+    grayBlight: 'ধূসৰ ব্লাইট',
+    whiteSpot: 'বগা দাগ / ব্লিষ্টাৰ ব্লাইট',
+    anthracnose: 'এন্থ্ৰাকন\'জ',
     brownBlight: 'বাদামী ব্লাইট',
-    blisterBlight: 'ব্লিষ্টাৰ / বগা ব্লাইট',
     healthy: 'স্বাস্থ্যকৰ',
     uncertain: 'অনিশ্চিত',
     
@@ -196,9 +204,13 @@ export const translations = {
     step3Desc: 'उपचार योजना के साथ निदान प्राप्त करें',
     
     // Diseases
-    redRust: 'लाल जंग',
+    redLeafSpot: 'लाल पत्ती धब्बा',
+    algalLeafSpot: 'शैवाल पत्ती धब्बा',
+    birdsEyeSpot: 'बर्ड्स आई स्पॉट',
+    grayBlight: 'ग्रे ब्लाइट',
+    whiteSpot: 'सफेद धब्बा / ब्लिस्टर ब्लाइट',
+    anthracnose: 'एन्थ्रेक्नोज',
     brownBlight: 'भूरा ब्लाइट',
-    blisterBlight: 'ब्लिस्टर / सफेद ब्लाइट',
     healthy: 'स्वस्थ',
     uncertain: 'अनिश्चित',
     
