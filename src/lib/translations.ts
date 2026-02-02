@@ -3,7 +3,7 @@ export type Language = 'en' | 'as' | 'hi';
 export const translations = {
   en: {
     // App
-    appName: 'TeaGuard',
+    appName: 'Tea-Shield',
     tagline: 'Protect Your Tea Garden',
     
     // Home
@@ -17,7 +17,7 @@ export const translations = {
     step2Title: 'Analysis',
     step2Desc: 'Our system analyzes color patterns',
     step3Title: 'Results',
-    step3Desc: 'Get diagnosis with confidence score',
+    step3Desc: 'Get diagnosis with treatment plan',
     
     // Diseases
     redRust: 'Red Rust',
@@ -36,6 +36,13 @@ export const translations = {
     confidence: 'Confidence',
     infectedArea: 'Infected Area',
     
+    // Treatment
+    treatmentPlan: 'Treatment Plan',
+    timing: 'Best Timing',
+    lowCostInputs: 'Low-Cost Inputs',
+    preventionTips: 'Prevention Tips',
+    step: 'Step',
+    
     // Advice
     advice: 'Recommended Action',
     adviceHighConfidence: 'You can act immediately based on this result.',
@@ -43,7 +50,7 @@ export const translations = {
     adviceLowConfidence: 'Please take another photo or consult an expert.',
     
     // Actions
-    analyzeAnother: 'Analyze Another Leaf',
+    analyzeAnother: 'Analyze Another',
     askChatbot: 'Ask Assistant',
     retake: 'Retake Photo',
     
@@ -62,6 +69,16 @@ export const translations = {
     // Language
     language: 'Language',
     
+    // Weather
+    weather: 'Today\'s Weather',
+    weatherGood: 'Good for tea plants',
+    weatherModerate: 'Monitor your plants',
+    weatherBad: 'Risk of disease spread',
+    temperature: 'Temperature',
+    humidity: 'Humidity',
+    conditions: 'Conditions',
+    teaAdvice: 'Tea Garden Advice',
+    
     // Errors
     noLeafDetected: 'No leaf detected in the image. Please try again.',
     processingError: 'Error processing image. Please try again.',
@@ -74,7 +91,7 @@ export const translations = {
   
   as: {
     // App
-    appName: 'টিগাৰ্ড',
+    appName: 'টি-শ্বিল্ড',
     tagline: 'আপোনাৰ চাহ বাগিচা সুৰক্ষিত কৰক',
     
     // Home
@@ -88,7 +105,7 @@ export const translations = {
     step2Title: 'বিশ্লেষণ',
     step2Desc: 'আমাৰ ব্যৱস্থাই ৰঙৰ আৰ্হি বিশ্লেষণ কৰে',
     step3Title: 'ফলাফল',
-    step3Desc: 'আত্মবিশ্বাসৰ স্কোৰসহ নিদান পাওক',
+    step3Desc: 'চিকিৎসা পৰিকল্পনাসহ নিদান পাওক',
     
     // Diseases
     redRust: 'ৰঙা মামৰ',
@@ -107,6 +124,13 @@ export const translations = {
     confidence: 'আত্মবিশ্বাস',
     infectedArea: 'সংক্ৰমিত অঞ্চল',
     
+    // Treatment
+    treatmentPlan: 'চিকিৎসা পৰিকল্পনা',
+    timing: 'উত্তম সময়',
+    lowCostInputs: 'কম খৰচী সামগ্ৰী',
+    preventionTips: 'প্ৰতিৰোধ টিপছ',
+    step: 'পদক্ষেপ',
+    
     // Advice
     advice: 'পৰামৰ্শিত কাৰ্য',
     adviceHighConfidence: 'আপুনি এই ফলাফলৰ ওপৰত ভিত্তি কৰি তৎক্ষণাত কাম কৰিব পাৰে।',
@@ -114,7 +138,7 @@ export const translations = {
     adviceLowConfidence: 'অনুগ্ৰহ কৰি আন এখন ফটো তুলক বা বিশেষজ্ঞৰ পৰামৰ্শ লওক।',
     
     // Actions
-    analyzeAnother: 'আন এটা পাত বিশ্লেষণ কৰক',
+    analyzeAnother: 'আন এটা বিশ্লেষণ',
     askChatbot: 'সহায়কক সুধক',
     retake: 'পুনৰ ফটো তোলক',
     
@@ -133,6 +157,16 @@ export const translations = {
     // Language
     language: 'ভাষা',
     
+    // Weather
+    weather: 'আজিৰ বতৰ',
+    weatherGood: 'চাহ গছৰ বাবে ভাল',
+    weatherModerate: 'আপোনাৰ গছ নিৰীক্ষণ কৰক',
+    weatherBad: 'ৰোগ বিয়পাৰ আশংকা',
+    temperature: 'তাপমাত্ৰা',
+    humidity: 'আৰ্দ্ৰতা',
+    conditions: 'অৱস্থা',
+    teaAdvice: 'চাহ বাগিচাৰ পৰামৰ্শ',
+    
     // Errors
     noLeafDetected: 'ছবিত কোনো পাত ধৰা পৰা নাই। অনুগ্ৰহ কৰি পুনৰ চেষ্টা কৰক।',
     processingError: 'ছবি প্ৰক্ৰিয়াকৰণত ত্ৰুটি। অনুগ্ৰহ কৰি পুনৰ চেষ্টা কৰক।',
@@ -145,7 +179,7 @@ export const translations = {
   
   hi: {
     // App
-    appName: 'टीगार्ड',
+    appName: 'टी-शील्ड',
     tagline: 'अपने चाय बागान की सुरक्षा करें',
     
     // Home
@@ -159,7 +193,7 @@ export const translations = {
     step2Title: 'विश्लेषण',
     step2Desc: 'हमारी प्रणाली रंग पैटर्न का विश्लेषण करती है',
     step3Title: 'परिणाम',
-    step3Desc: 'विश्वास स्कोर के साथ निदान प्राप्त करें',
+    step3Desc: 'उपचार योजना के साथ निदान प्राप्त करें',
     
     // Diseases
     redRust: 'लाल जंग',
@@ -178,6 +212,13 @@ export const translations = {
     confidence: 'विश्वास',
     infectedArea: 'संक्रमित क्षेत्र',
     
+    // Treatment
+    treatmentPlan: 'उपचार योजना',
+    timing: 'सबसे अच्छा समय',
+    lowCostInputs: 'कम लागत वाली सामग्री',
+    preventionTips: 'रोकथाम सुझाव',
+    step: 'चरण',
+    
     // Advice
     advice: 'अनुशंसित कार्रवाई',
     adviceHighConfidence: 'आप इस परिणाम के आधार पर तुरंत कार्रवाई कर सकते हैं।',
@@ -185,7 +226,7 @@ export const translations = {
     adviceLowConfidence: 'कृपया एक और फोटो लें या किसी विशेषज्ञ से परामर्श करें।',
     
     // Actions
-    analyzeAnother: 'एक और पत्ती का विश्लेषण करें',
+    analyzeAnother: 'एक और विश्लेषण',
     askChatbot: 'सहायक से पूछें',
     retake: 'फिर से फोटो लें',
     
@@ -203,6 +244,16 @@ export const translations = {
     
     // Language
     language: 'भाषा',
+    
+    // Weather
+    weather: 'आज का मौसम',
+    weatherGood: 'चाय पौधों के लिए अच्छा',
+    weatherModerate: 'अपने पौधों की निगरानी करें',
+    weatherBad: 'रोग फैलने का खतरा',
+    temperature: 'तापमान',
+    humidity: 'नमी',
+    conditions: 'स्थिति',
+    teaAdvice: 'चाय बागान सलाह',
     
     // Errors
     noLeafDetected: 'छवि में कोई पत्ती नहीं मिली। कृपया पुनः प्रयास करें।',

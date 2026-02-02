@@ -2,6 +2,7 @@ import { AlertTriangle, CheckCircle2, Info, RefreshCw, MessageCircle } from 'luc
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { AnalysisResult, DiseaseType, getConfidenceLevel } from '@/lib/diseaseAnalyzer';
+import { TreatmentPlan } from './TreatmentPlan';
 
 interface ResultDisplayProps {
   result: AnalysisResult;
@@ -43,38 +44,43 @@ export function ResultDisplay({ result, imageUrl, onReset, onOpenChat }: ResultD
     'adviceLowConfidence';
 
   return (
-    <div className="space-y-4 slide-up">
+    <div className="space-y-4">
       {/* Image Preview */}
-      <div className="relative rounded-2xl overflow-hidden shadow-card">
+      <div className="relative rounded-2xl overflow-hidden shadow-card scale-in">
         <img 
           src={imageUrl} 
           alt="Analyzed leaf" 
           className="w-full aspect-[4/3] object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-foreground/20 to-transparent" />
+        
+        {/* Scan Effect */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent animate-scan-line" />
+        </div>
         
         {/* Disease Badge */}
         <div className="absolute bottom-4 left-4 right-4">
-          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${diseaseColors[result.disease]} text-primary-foreground font-semibold`}>
+          <div className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-full ${diseaseColors[result.disease]} text-primary-foreground font-bold shadow-elevated bounce-gentle`}>
             {diseaseIcons[result.disease]}
-            <span>{diseaseName}</span>
+            <span className="text-lg">{diseaseName}</span>
           </div>
         </div>
       </div>
 
       {/* Results Card */}
-      <div className="result-card space-y-5">
+      <div className="result-card space-y-5 fade-in delay-100">
         <h2 className="text-xl font-display font-semibold">{t('analysisResults')}</h2>
 
         {/* Confidence */}
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">{t('confidence')}</span>
-            <span className="font-semibold">{result.confidence}%</span>
+            <span className="text-sm text-muted-foreground font-medium">{t('confidence')}</span>
+            <span className="font-bold text-lg">{result.confidence}%</span>
           </div>
           <div className="h-3 bg-muted rounded-full overflow-hidden">
             <div 
-              className={`h-full rounded-full transition-all duration-700 ${
+              className={`h-full rounded-full transition-all duration-1000 ease-out ${
                 confidenceLevel === 'high' ? 'bg-disease-healthy' :
                 confidenceLevel === 'medium' ? 'bg-severity-medium' :
                 'bg-severity-high'
@@ -86,17 +92,17 @@ export function ResultDisplay({ result, imageUrl, onReset, onOpenChat }: ResultD
 
         {/* Severity (only for diseases) */}
         {result.disease !== 'healthy' && result.disease !== 'uncertain' && (
-          <div className="space-y-2">
+          <div className="space-y-2 fade-in delay-200">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">{t('severity')}</span>
-              <span className="font-semibold">
+              <span className="text-sm text-muted-foreground font-medium">{t('severity')}</span>
+              <span className="font-bold">
                 {t(`severity${result.severity.charAt(0).toUpperCase() + result.severity.slice(1)}` as any)} ({result.severityPercentage}%)
               </span>
             </div>
             <div className="severity-bar">
               <div 
                 className={`severity-fill ${severityColor}`}
-                style={{ width: `${result.severityPercentage}%` }}
+                style={{ width: `${Math.min(result.severityPercentage, 100)}%` }}
               />
             </div>
           </div>
@@ -104,33 +110,36 @@ export function ResultDisplay({ result, imageUrl, onReset, onOpenChat }: ResultD
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="bg-secondary/50 rounded-xl p-3">
-            <p className="text-muted-foreground text-xs">{t('leafPixels')}</p>
-            <p className="font-semibold text-lg">{result.leafPixelCount.toLocaleString()}</p>
+          <div className="bg-secondary/50 rounded-xl p-3 hover-lift">
+            <p className="text-muted-foreground text-xs font-medium">{t('leafPixels')}</p>
+            <p className="font-bold text-xl">{result.leafPixelCount.toLocaleString()}</p>
           </div>
-          <div className="bg-secondary/50 rounded-xl p-3">
-            <p className="text-muted-foreground text-xs">{t('infectedArea')}</p>
-            <p className="font-semibold text-lg">{result.severityPercentage}%</p>
+          <div className="bg-secondary/50 rounded-xl p-3 hover-lift">
+            <p className="text-muted-foreground text-xs font-medium">{t('infectedArea')}</p>
+            <p className="font-bold text-xl">{result.severityPercentage}%</p>
           </div>
         </div>
 
         {/* Advice */}
-        <div className={`p-4 rounded-xl ${
+        <div className={`p-4 rounded-xl transition-all duration-300 ${
           confidenceLevel === 'high' ? 'bg-disease-healthy/10 border border-disease-healthy/20' :
           confidenceLevel === 'medium' ? 'bg-severity-medium/10 border border-severity-medium/20' :
           'bg-severity-high/10 border border-severity-high/20'
         }`}>
-          <p className="text-sm font-medium mb-1">{t('advice')}</p>
-          <p className="text-sm text-muted-foreground">{t(adviceKey)}</p>
+          <p className="text-sm font-semibold mb-1">{t('advice')}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">{t(adviceKey)}</p>
         </div>
       </div>
 
+      {/* Treatment Plan */}
+      <TreatmentPlan disease={result.disease} />
+
       {/* Actions */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 fade-in delay-300">
         <Button
           variant="outline"
           onClick={onReset}
-          className="h-14 gap-2 rounded-xl"
+          className="h-14 gap-2 rounded-xl font-semibold hover-lift"
         >
           <RefreshCw className="h-5 w-5" />
           <span>{t('analyzeAnother')}</span>
@@ -138,7 +147,7 @@ export function ResultDisplay({ result, imageUrl, onReset, onOpenChat }: ResultD
         
         <Button
           onClick={onOpenChat}
-          className="h-14 gap-2 hero-gradient rounded-xl"
+          className="h-14 gap-2 hero-gradient rounded-xl font-semibold shadow-glow hover-lift"
         >
           <MessageCircle className="h-5 w-5" />
           <span>{t('askChatbot')}</span>

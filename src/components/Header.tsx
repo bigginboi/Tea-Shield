@@ -9,14 +9,14 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/50">
       <div className="container flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl hero-gradient">
-            <Leaf className="h-5 w-5 text-primary-foreground" />
+          <div className="flex items-center justify-center w-11 h-11 rounded-2xl hero-gradient shadow-glow animate-leaf-sway">
+            <Leaf className="h-6 w-6 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-lg font-display font-semibold text-foreground">
+            <h1 className="text-xl font-display font-bold text-foreground tracking-wide">
               {t('appName')}
             </h1>
-            <p className="text-xs text-muted-foreground hidden sm:block">
+            <p className="text-xs text-muted-foreground hidden sm:block font-medium">
               {t('tagline')}
             </p>
           </div>
