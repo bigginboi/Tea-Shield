@@ -12,11 +12,11 @@ interface ResultDisplayProps {
 }
 
 const diseaseColors: Record<DiseaseType, string> = {
-  redLeafSpot: 'bg-disease-rust',
+  redRust: 'bg-disease-rust',
   algalLeafSpot: 'bg-primary/70',
   birdsEyeSpot: 'bg-amber-500',
   grayBlight: 'bg-gray-500',
-  whiteSpot: 'bg-disease-blister text-foreground',
+  blisterBlight: 'bg-disease-blister text-foreground',
   anthracnose: 'bg-disease-brown',
   brownBlight: 'bg-disease-brown',
   healthy: 'bg-disease-healthy',
@@ -24,11 +24,11 @@ const diseaseColors: Record<DiseaseType, string> = {
 };
 
 const diseaseIcons: Record<DiseaseType, React.ReactNode> = {
-  redLeafSpot: <AlertTriangle className="h-6 w-6" />,
+  redRust: <AlertTriangle className="h-6 w-6" />,
   algalLeafSpot: <AlertTriangle className="h-6 w-6" />,
   birdsEyeSpot: <AlertTriangle className="h-6 w-6" />,
   grayBlight: <AlertTriangle className="h-6 w-6" />,
-  whiteSpot: <AlertTriangle className="h-6 w-6" />,
+  blisterBlight: <AlertTriangle className="h-6 w-6" />,
   anthracnose: <AlertTriangle className="h-6 w-6" />,
   brownBlight: <AlertTriangle className="h-6 w-6" />,
   healthy: <CheckCircle2 className="h-6 w-6" />,

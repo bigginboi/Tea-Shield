@@ -17,16 +17,16 @@ type TreatableDiseases = Exclude<DiseaseType, 'healthy' | 'uncertain'>;
 
 export const treatmentData: Record<Language, Record<TreatableDiseases, TreatmentInfo>> = {
   en: {
-    redLeafSpot: {
+    redRust: {
       steps: [
-        { title: 'Remove infected leaves', description: 'Carefully pluck and collect all leaves showing red spots' },
-        { title: 'Improve air circulation', description: 'Prune overcrowded branches to allow better airflow' },
-        { title: 'Apply copper fungicide', description: 'Spray Bordeaux mixture (1%) on remaining healthy leaves' },
-        { title: 'Dispose safely', description: 'Burn or bury infected leaves away from the garden' },
+        { title: 'Early detection', description: 'Look for reddish-brown pustules or spots on tea leaves, typically on the lower surface' },
+        { title: 'Remove infected leaves', description: 'Carefully pluck all leaves showing rusty, powdery appearance and collect them' },
+        { title: 'Improve air circulation', description: 'Regular pruning improves air flow and reduces humidity around plants' },
+        { title: 'Apply copper fungicide', description: 'Spray copper-based fungicides on remaining healthy leaves' },
       ],
-      timing: 'Early morning (6-8 AM) when leaves are dry. Avoid rainy days. Repeat spray every 10-14 days.',
+      timing: 'Early morning (6-8 AM) when leaves are dry. Favors warm, humid weather (18-25°C). Repeat spray every 10-14 days.',
       lowCostInputs: [
-        'Bordeaux mixture (copper sulfate + lime)',
+        'Copper-based fungicides (Bordeaux mixture 1%)',
         'Neem oil spray (5ml per liter)',
         'Wood ash dusting',
         'Baking soda spray (1 tsp per liter)',
@@ -36,6 +36,7 @@ export const treatmentData: Record<Language, Record<TreatableDiseases, Treatment
         'Avoid overhead irrigation',
         'Regular pruning for air circulation',
         'Remove fallen leaves regularly',
+        'High humidity and poor air circulation increase risk',
       ],
     },
     algalLeafSpot: {
@@ -60,7 +61,7 @@ export const treatmentData: Record<Language, Record<TreatableDiseases, Treatment
     },
     birdsEyeSpot: {
       steps: [
-        { title: 'Scout for circular spots', description: 'Look for small spots with light-colored centers' },
+        { title: 'Scout for circular spots', description: 'Look for small spots with light-colored centers (eye-like appearance)' },
         { title: 'Remove infected material', description: 'Prune and remove affected leaves and twigs' },
         { title: 'Apply fungicide treatment', description: 'Use mancozeb or copper-based fungicides' },
         { title: 'Improve sanitation', description: 'Clean up fallen debris around plants' },
@@ -98,14 +99,14 @@ export const treatmentData: Record<Language, Record<TreatableDiseases, Treatment
         'Ensure good drainage',
       ],
     },
-    whiteSpot: {
+    blisterBlight: {
       steps: [
+        { title: 'Act within 24 hours', description: 'This disease spreads rapidly - immediate action is critical' },
         { title: 'Stop plucking affected area', description: 'Avoid harvesting from infected sections for 2 weeks' },
-        { title: 'Remove blistered leaves', description: 'Hand-pick all leaves showing white/pale blisters' },
-        { title: 'Apply protective spray', description: 'Use copper hydroxide or hexaconazole spray' },
-        { title: 'Shade management', description: 'Ensure proper shade tree maintenance' },
+        { title: 'Remove blistered leaves', description: 'Hand-pick all leaves showing pale white or cream-colored patches with blister-like raised areas' },
+        { title: 'Apply protective spray', description: 'Use copper hydroxide, sulfur, or fungicides. Remove shade trees to prevent leaf wetness' },
       ],
-      timing: 'Apply spray before rain (if forecast) or early morning. Critical during cool, humid months (Oct-Feb).',
+      timing: 'Apply spray before rain (if forecast) or early morning. Critical during cool, humid months (Oct-Feb). Spreads rapidly at 15-25°C with continuous leaf wetness.',
       lowCostInputs: [
         'Copper hydroxide (2g per liter)',
         'Sulfur dust for dry application',
@@ -117,6 +118,7 @@ export const treatmentData: Record<Language, Record<TreatableDiseases, Treatment
         'Proper drainage to reduce humidity',
         'Regular monitoring during monsoon',
         'Avoid dense planting',
+        'Prevent leaf wetness - most damaging in wet season',
       ],
     },
     anthracnose: {
@@ -142,12 +144,12 @@ export const treatmentData: Record<Language, Record<TreatableDiseases, Treatment
     },
     brownBlight: {
       steps: [
-        { title: 'Identify and remove', description: 'Remove all leaves with brown/black spots immediately' },
-        { title: 'Reduce moisture', description: 'Avoid watering leaves directly; use drip irrigation if possible' },
-        { title: 'Apply fungicide', description: 'Use copper oxychloride (3g per liter) spray' },
-        { title: 'Monitor closely', description: 'Check plants daily for 2 weeks for new infections' },
+        { title: 'Act immediately', description: 'This disease is highly destructive and spreads rapidly' },
+        { title: 'Identify and remove', description: 'Remove all leaves with dark brown or black circular spots with concentric rings. Centers may have grayish appearance' },
+        { title: 'Improve drainage', description: 'Thrives in wet, waterlogged soil with poor drainage. Improve drainage immediately' },
+        { title: 'Apply systemic fungicide', description: 'Use copper oxychloride (3g per liter) spray' },
       ],
-      timing: 'Spray during dry weather, preferably late afternoon (4-6 PM). Repeat every 7-10 days until controlled.',
+      timing: 'Spray during dry weather, preferably late afternoon (4-6 PM). Repeat every 7-10 days until controlled. Common in areas with heavy rainfall and high humidity.',
       lowCostInputs: [
         'Copper oxychloride powder',
         'Trichoderma viride (bio-fungicide)',
@@ -155,24 +157,25 @@ export const treatmentData: Record<Language, Record<TreatableDiseases, Treatment
         'Cow urine dilution (1:10)',
       ],
       preventionTips: [
-        'Ensure good drainage in tea beds',
+        'Ensure good drainage in tea beds - essential for prevention',
         'Avoid working when plants are wet',
         'Use disease-free planting material',
         'Balanced fertilization (avoid excess nitrogen)',
+        'Waterlogged soil promotes this disease',
       ],
     },
   },
   as: {
-    redLeafSpot: {
+    redRust: {
       steps: [
-        { title: 'সংক্ৰমিত পাত আঁতৰাওক', description: 'ৰঙা দাগ থকা সকলো পাত সাৱধানে ছিঙি সংগ্ৰহ কৰক' },
-        { title: 'বায়ু চলাচল উন্নত কৰক', description: 'ভাল বায়ু প্ৰবাহৰ বাবে ঘন ডালবোৰ কাটক' },
-        { title: 'তামৰ ভেঁকুৰনাশক প্ৰয়োগ কৰক', description: 'বাকী সুস্থ পাতত বৰ্ডো মিশ্ৰণ (১%) স্প্ৰে কৰক' },
-        { title: 'নিৰাপদে নিষ্কাশন কৰক', description: 'সংক্ৰমিত পাতবোৰ বাগিচাৰ পৰা আঁতৰত জ্বলাই বা পুতি থওক' },
+        { title: 'আগতীয়া চিনাক্তকৰণ', description: 'চাহ পাতত ৰঙচুৱা-বাদামী পাষ্টুল বা দাগ বিচাৰক, সাধাৰণতে তলৰ পৃষ্ঠত' },
+        { title: 'সংক্ৰমিত পাত আঁতৰাওক', description: 'মামৰীয়া, পাউদাৰীয়া চেহেৰা দেখুওৱা সকলো পাত সাৱধানে ছিঙি সংগ্ৰহ কৰক' },
+        { title: 'বায়ু চলাচল উন্নত কৰক', description: 'নিয়মীয়া ছাঁটনিয়ে বায়ু প্ৰবাহ উন্নত কৰে আৰু গছৰ চাৰিওফালে আৰ্দ্ৰতা হ্ৰাস কৰে' },
+        { title: 'তামৰ ভেঁকুৰনাশক প্ৰয়োগ কৰক', description: 'বাকী সুস্থ পাতত তামযুক্ত ভেঁকুৰনাশক স্প্ৰে কৰক' },
       ],
-      timing: 'পুৱা সোনকালে (৬-৮ বজা) যেতিয়া পাত শুকান থাকে। বৰষুণৰ দিন এৰাই চলক। প্ৰতি ১০-১৪ দিনত পুনৰ স্প্ৰে কৰক।',
+      timing: 'পুৱা সোনকালে (৬-৮ বজা) যেতিয়া পাত শুকান থাকে। উষ্ণ, আৰ্দ্ৰ বতৰত (১৮-২৫°C) হয়। প্ৰতি ১০-১৪ দিনত পুনৰ স্প্ৰে কৰক।',
       lowCostInputs: [
-        'বৰ্ডো মিশ্ৰণ (কপাৰ চালফেট + চূণ)',
+        'তামযুক্ত ভেঁকুৰনাশক (বৰ্ডো মিশ্ৰণ ১%)',
         'নিম তেল স্প্ৰে (প্ৰতি লিটাৰত ৫ মিলি)',
         'কাঠৰ ছাই ছটিওৱা',
         'বেকিং চোডা স্প্ৰে (প্ৰতি লিটাৰত ১ চামুচ)',
@@ -244,14 +247,14 @@ export const treatmentData: Record<Language, Record<TreatableDiseases, Treatment
         'ভাল নিষ্কাশন নিশ্চিত কৰক',
       ],
     },
-    whiteSpot: {
+    blisterBlight: {
       steps: [
+        { title: '২৪ ঘণ্টাৰ ভিতৰত কাৰ্য কৰক', description: 'এই ৰোগ দ্ৰুত বিয়পে - তাৎক্ষণিক পদক্ষেপ অতি গুৰুত্বপূৰ্ণ' },
         { title: 'আক্ৰান্ত অঞ্চলৰ পৰা ছিঙা বন্ধ কৰক', description: '২ সপ্তাহৰ বাবে সংক্ৰমিত অংশৰ পৰা চপোৱা এৰাই চলক' },
-        { title: 'ফোঁহা থকা পাত আঁতৰাওক', description: 'বগা/শেঁতা ফোঁহা দেখুওৱা সকলো পাত হাতেৰে ছিঙক' },
-        { title: 'সুৰক্ষামূলক স্প্ৰে প্ৰয়োগ কৰক', description: 'কপাৰ হাইড্ৰক্সাইড বা হেক্সাক\'নাজ\'ল স্প্ৰে ব্যৱহাৰ কৰক' },
-        { title: 'ছাঁ ব্যৱস্থাপনা', description: 'সঠিক ছাঁ গছৰ ৰক্ষণাবেক্ষণ নিশ্চিত কৰক' },
+        { title: 'ফোঁহা থকা পাত আঁতৰাওক', description: 'ফেঁকুৰি সদৃশ উঠা অংশ থকা শেঁতা বগা বা ক্ৰীম ৰঙৰ দাগ দেখুওৱা সকলো পাত হাতেৰে ছিঙক' },
+        { title: 'সুৰক্ষামূলক স্প্ৰে প্ৰয়োগ কৰক', description: 'কপাৰ হাইড্ৰক্সাইড, চালফাৰ বা ভেঁকুৰনাশক ব্যৱহাৰ কৰক। পাত তিতা হোৱা ৰোধ কৰিবলৈ ছাঁ গছ আঁতৰাওক' },
       ],
-      timing: 'বৰষুণৰ আগত (যদি পূৰ্বানুমান থাকে) বা পুৱা সোনকালে স্প্ৰে প্ৰয়োগ কৰক। শীতল, আৰ্দ্ৰ মাহত (অক্টো-ফেব) গুৰুত্বপূৰ্ণ।',
+      timing: 'বৰষুণৰ আগত (যদি পূৰ্বানুমান থাকে) বা পুৱা সোনকালে স্প্ৰে প্ৰয়োগ কৰক। শীতল, আৰ্দ্ৰ মাহত (অক্টো-ফেব) গুৰুত্বপূৰ্ণ। অবিৰত পাত তিতি থাকিলে ১৫-২৫°C ত দ্ৰুত বিয়পে।',
       lowCostInputs: [
         'কপাৰ হাইড্ৰক্সাইড (প্ৰতি লিটাৰত ২ গ্ৰাম)',
         'শুকান প্ৰয়োগৰ বাবে চালফাৰ ধূলি',
@@ -288,12 +291,12 @@ export const treatmentData: Record<Language, Record<TreatableDiseases, Treatment
     },
     brownBlight: {
       steps: [
-        { title: 'চিনাক্ত আৰু আঁতৰাওক', description: 'বাদামী/ক\'লা দাগ থকা সকলো পাত তৎক্ষণাত আঁতৰাওক' },
-        { title: 'আৰ্দ্ৰতা কমাওক', description: 'পাতত পোনপটীয়াকৈ পানী দিয়া এৰাই চলক; সম্ভৱ হ\'লে ড্ৰিপ জলসিঞ্চন ব্যৱহাৰ কৰক' },
-        { title: 'ভেঁকুৰনাশক প্ৰয়োগ কৰক', description: 'কপাৰ অক্সিক্ল\'ৰাইড (প্ৰতি লিটাৰত ৩ গ্ৰাম) স্প্ৰে ব্যৱহাৰ কৰক' },
-        { title: 'নিবিড়ভাৱে নিৰীক্ষণ কৰক', description: 'নতুন সংক্ৰমণৰ বাবে ২ সপ্তাহ প্ৰতিদিনে গছ পৰীক্ষা কৰক' },
+        { title: 'তাৎক্ষণিক পদক্ষেপ লওক', description: 'এই ৰোগ অতি ধ্বংসাত্মক আৰু দ্ৰুত বিয়পে' },
+        { title: 'চিনাক্ত আৰু আঁতৰাওক', description: 'সকেন্দ্ৰিক বৃত্ত থকা গাঢ় বাদামী বা ক\'লা ঘূৰণীয়া দাগ থকা সকলো পাত আঁতৰাওক। কেন্দ্ৰ ধূসৰ হ\'ব পাৰে' },
+        { title: 'নিষ্কাশন উন্নত কৰক', description: 'দুৰ্বল নিষ্কাশন থকা সেমেকা, পানী জমা মাটিত বৃদ্ধি পায়। তাৎক্ষণিকভাৱে নিষ্কাশন উন্নত কৰক' },
+        { title: 'প্ৰণালীবদ্ধ ভেঁকুৰনাশক প্ৰয়োগ কৰক', description: 'কপাৰ অক্সিক্ল\'ৰাইড (প্ৰতি লিটাৰত ৩ গ্ৰাম) স্প্ৰে ব্যৱহাৰ কৰক' },
       ],
-      timing: 'শুকান বতৰত স্প্ৰে কৰক, বিশেষকৈ আবেলি (৪-৬ বজা)। নিয়ন্ত্ৰণ নোহোৱালৈকে প্ৰতি ৭-১০ দিনত পুনৰাবৃত্তি কৰক।',
+      timing: 'শুকান বতৰত স্প্ৰে কৰক, বিশেষকৈ আবেলি (৪-৬ বজা)। নিয়ন্ত্ৰণ নোহোৱালৈকে প্ৰতি ৭-১০ দিনত পুনৰাবৃত্তি কৰক। অধিক বৰষুণ আৰু উচ্চ আৰ্দ্ৰতা থকা অঞ্চলত সাধাৰণ।',
       lowCostInputs: [
         'কপাৰ অক্সিক্ল\'ৰাইড পাউদাৰ',
         'ট্ৰাইক\'ডাৰ্মা ভিৰিডি (জৈৱ-ভেঁকুৰনাশক)',
@@ -301,7 +304,7 @@ export const treatmentData: Record<Language, Record<TreatableDiseases, Treatment
         'গৰুৰ মূত্ৰ পানী মিহলি (১:১০)',
       ],
       preventionTips: [
-        'চাহ বিচনাত ভাল নিষ্কাশন নিশ্চিত কৰক',
+        'চাহ বিচনাত ভাল নিষ্কাশন নিশ্চিত কৰক - প্ৰতিৰোধৰ বাবে অপৰিহাৰ্য',
         'গছ তিতা থাকিলে কাম কৰা এৰাই চলক',
         'ৰোগমুক্ত ৰোপণ সামগ্ৰী ব্যৱহাৰ কৰক',
         'সুষম সাৰ প্ৰয়োগ (অতিৰিক্ত নাইট্ৰ\'জেন এৰাই চলক)',
@@ -309,16 +312,16 @@ export const treatmentData: Record<Language, Record<TreatableDiseases, Treatment
     },
   },
   hi: {
-    redLeafSpot: {
+    redRust: {
       steps: [
-        { title: 'संक्रमित पत्तियां हटाएं', description: 'लाल धब्बे वाली सभी पत्तियों को सावधानी से तोड़कर इकट्ठा करें' },
-        { title: 'हवा का संचार बेहतर करें', description: 'बेहतर वायु प्रवाह के लिए घनी शाखाओं की छंटाई करें' },
-        { title: 'कॉपर फफूंदनाशक लगाएं', description: 'बाकी स्वस्थ पत्तियों पर बोर्डो मिश्रण (1%) का छिड़काव करें' },
-        { title: 'सुरक्षित रूप से निपटान करें', description: 'संक्रमित पत्तियों को बगीचे से दूर जलाएं या दबाएं' },
+        { title: 'शीघ्र पहचान', description: 'चाय की पत्तियों पर लाल-भूरे दाने या धब्बे देखें, आमतौर पर निचली सतह पर' },
+        { title: 'संक्रमित पत्तियां हटाएं', description: 'जंग जैसी, पाउडर जैसी दिखने वाली सभी पत्तियों को सावधानी से तोड़कर इकट्ठा करें' },
+        { title: 'हवा का संचार बेहतर करें', description: 'नियमित छंटाई से हवा का प्रवाह बेहतर होता है और पौधों के आसपास नमी कम होती है' },
+        { title: 'कॉपर फफूंदनाशक लगाएं', description: 'बाकी स्वस्थ पत्तियों पर तांबा आधारित फफूंदनाशक का छिड़काव करें' },
       ],
-      timing: 'सुबह जल्दी (6-8 बजे) जब पत्तियां सूखी हों। बारिश के दिन छोड़ें। हर 10-14 दिन में दोहराएं।',
+      timing: 'सुबह जल्दी (6-8 बजे) जब पत्तियां सूखी हों। गर्म, नम मौसम (18-25°C) में होता है। हर 10-14 दिन में दोहराएं।',
       lowCostInputs: [
-        'बोर्डो मिश्रण (कॉपर सल्फेट + चूना)',
+        'तांबा आधारित फफूंदनाशक (बोर्डो मिश्रण 1%)',
         'नीम तेल स्प्रे (5ml प्रति लीटर)',
         'लकड़ी की राख छिड़काव',
         'बेकिंग सोडा स्प्रे (1 चम्मच प्रति लीटर)',
@@ -390,14 +393,14 @@ export const treatmentData: Record<Language, Record<TreatableDiseases, Treatment
         'अच्छी जल निकासी सुनिश्चित करें',
       ],
     },
-    whiteSpot: {
+    blisterBlight: {
       steps: [
+        { title: '24 घंटे के भीतर कार्रवाई करें', description: 'यह बीमारी तेजी से फैलती है - तत्काल कार्रवाई महत्वपूर्ण है' },
         { title: 'प्रभावित क्षेत्र से तुड़ाई बंद करें', description: '2 सप्ताह के लिए संक्रमित भागों से कटाई न करें' },
-        { title: 'फफोले वाली पत्तियां हटाएं', description: 'सफेद/हल्के फफोले दिखाने वाली सभी पत्तियां हाथ से तोड़ें' },
-        { title: 'सुरक्षात्मक स्प्रे लगाएं', description: 'कॉपर हाइड्रॉक्साइड या हेक्साकोनाज़ोल स्प्रे का उपयोग करें' },
-        { title: 'छाया प्रबंधन', description: 'उचित छाया वृक्ष रखरखाव सुनिश्चित करें' },
+        { title: 'फफोले वाली पत्तियां हटाएं', description: 'फफोले जैसे उभरे क्षेत्रों के साथ हल्के सफेद या क्रीम रंग के धब्बे दिखाने वाली सभी पत्तियां हाथ से तोड़ें' },
+        { title: 'सुरक्षात्मक स्प्रे लगाएं', description: 'कॉपर हाइड्रॉक्साइड, सल्फर या फफूंदनाशक का उपयोग करें। पत्तियों को गीला होने से रोकने के लिए छाया के पेड़ हटाएं' },
       ],
-      timing: 'बारिश से पहले (यदि पूर्वानुमान हो) या सुबह जल्दी स्प्रे करें। ठंडे, नम महीनों (अक्टू-फरवरी) में महत्वपूर्ण।',
+      timing: 'बारिश से पहले (यदि पूर्वानुमान हो) या सुबह जल्दी स्प्रे करें। ठंडे, नम महीनों (अक्टू-फरवरी) में महत्वपूर्ण। लगातार पत्ती गीलेपन के साथ 15-25°C पर तेजी से फैलता है।',
       lowCostInputs: [
         'कॉपर हाइड्रॉक्साइड (2g प्रति लीटर)',
         'सूखे छिड़काव के लिए सल्फर धूल',
@@ -434,12 +437,12 @@ export const treatmentData: Record<Language, Record<TreatableDiseases, Treatment
     },
     brownBlight: {
       steps: [
-        { title: 'पहचानें और हटाएं', description: 'भूरे/काले धब्बे वाली सभी पत्तियां तुरंत हटाएं' },
-        { title: 'नमी कम करें', description: 'पत्तियों पर सीधे पानी देने से बचें; संभव हो तो ड्रिप सिंचाई का उपयोग करें' },
-        { title: 'फफूंदनाशक लगाएं', description: 'कॉपर ऑक्सीक्लोराइड (3g प्रति लीटर) स्प्रे का उपयोग करें' },
-        { title: 'बारीकी से निगरानी करें', description: 'नए संक्रमण के लिए 2 सप्ताह तक प्रतिदिन पौधों की जांच करें' },
+        { title: 'तुरंत कार्रवाई करें', description: 'यह बीमारी अत्यधिक विनाशकारी है और तेजी से फैलती है' },
+        { title: 'पहचानें और हटाएं', description: 'सकेंद्रित वलयों के साथ गहरे भूरे या काले गोलाकार धब्बे वाली सभी पत्तियां हटाएं। केंद्र धूसर हो सकते हैं' },
+        { title: 'जल निकासी सुधारें', description: 'खराब जल निकासी वाली गीली, जलभराव मिट्टी में पनपता है। तुरंत जल निकासी सुधारें' },
+        { title: 'प्रणालीगत फफूंदनाशक लगाएं', description: 'कॉपर ऑक्सीक्लोराइड (3g प्रति लीटर) स्प्रे का उपयोग करें' },
       ],
-      timing: 'सूखे मौसम में छिड़काव करें, अधिमानतः देर शाम (4-6 बजे)। नियंत्रण तक हर 7-10 दिन दोहराएं।',
+      timing: 'सूखे मौसम में छिड़काव करें, अधिमानतः देर शाम (4-6 बजे)। नियंत्रण तक हर 7-10 दिन दोहराएं। भारी वर्षा और उच्च नमी वाले क्षेत्रों में आम।',
       lowCostInputs: [
         'कॉपर ऑक्सीक्लोराइड पाउडर',
         'ट्राइकोडर्मा विरिडी (जैव-फफूंदनाशक)',
@@ -447,7 +450,7 @@ export const treatmentData: Record<Language, Record<TreatableDiseases, Treatment
         'गाय का मूत्र पतला (1:10)',
       ],
       preventionTips: [
-        'चाय की क्यारियों में अच्छी जल निकासी सुनिश्चित करें',
+        'चाय की क्यारियों में अच्छी जल निकासी सुनिश्चित करें - रोकथाम के लिए आवश्यक',
         'पौधे गीले होने पर काम करने से बचें',
         'रोग-मुक्त रोपण सामग्री का उपयोग करें',
         'संतुलित उर्वरक (अतिरिक्त नाइट्रोजन से बचें)',
