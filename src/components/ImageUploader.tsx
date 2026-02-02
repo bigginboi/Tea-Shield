@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback } from 'react';
-import { Camera, Upload, X, Loader2 } from 'lucide-react';
+import { Camera, Upload, X, Loader2, Leaf } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { analyzeLeafImage, AnalysisResult } from '@/lib/diseaseAnalyzer';
@@ -31,7 +31,6 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
       }
     } catch (error) {
       console.error('Camera access error:', error);
-      // Fallback to file upload
       fileInputRef.current?.click();
     }
   }, []);
@@ -87,7 +86,6 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Resize if too large
       const maxSize = 1024;
       let width = img.width;
       let height = img.height;
@@ -113,28 +111,30 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
     };
 
     img.src = imageUrl;
-    
-    // Reset input
     event.target.value = '';
   }, [onAnalysisComplete]);
 
   if (isAnalyzing) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-4 fade-in">
+      <div className="flex flex-col items-center justify-center py-20 gap-6 fade-in">
         <div className="relative">
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-            <Loader2 className="w-10 h-10 text-primary animate-spin" />
+          <div className="w-24 h-24 rounded-full hero-gradient flex items-center justify-center shadow-glow">
+            <Leaf className="w-12 h-12 text-primary-foreground animate-leaf-sway" />
           </div>
-          <div className="absolute inset-0 rounded-full border-4 border-primary/20 animate-ping" />
+          <div className="absolute inset-0 rounded-full border-4 border-primary/30 animate-ping" />
+          <div className="absolute -inset-2 rounded-full border-2 border-primary/20 animate-pulse" />
         </div>
-        <p className="text-muted-foreground font-medium">Analyzing leaf...</p>
+        <div className="text-center space-y-2">
+          <p className="text-foreground font-semibold text-lg">Analyzing leaf...</p>
+          <p className="text-muted-foreground text-sm">Processing color patterns</p>
+        </div>
       </div>
     );
   }
 
   if (isCapturing) {
     return (
-      <div className="relative rounded-2xl overflow-hidden bg-foreground/5 fade-in">
+      <div className="relative rounded-2xl overflow-hidden bg-foreground/5 fade-in shadow-card">
         <video
           ref={videoRef}
           autoPlay
@@ -145,9 +145,17 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
         
         {/* Overlay guide */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute inset-8 border-2 border-primary-foreground/50 rounded-xl" />
-          <div className="absolute bottom-20 left-0 right-0 text-center">
-            <p className="text-primary-foreground/90 text-sm bg-foreground/40 inline-block px-4 py-2 rounded-full backdrop-blur-sm">
+          <div className="absolute inset-8 border-2 border-primary-foreground/60 rounded-2xl" />
+          <div className="absolute inset-10 border border-primary-foreground/30 rounded-xl" />
+          
+          {/* Corner markers */}
+          <div className="absolute top-6 left-6 w-8 h-8 border-t-4 border-l-4 border-primary-foreground/80 rounded-tl-lg" />
+          <div className="absolute top-6 right-6 w-8 h-8 border-t-4 border-r-4 border-primary-foreground/80 rounded-tr-lg" />
+          <div className="absolute bottom-20 left-6 w-8 h-8 border-b-4 border-l-4 border-primary-foreground/80 rounded-bl-lg" />
+          <div className="absolute bottom-20 right-6 w-8 h-8 border-b-4 border-r-4 border-primary-foreground/80 rounded-br-lg" />
+          
+          <div className="absolute bottom-24 left-0 right-0 text-center">
+            <p className="text-primary-foreground text-sm bg-foreground/50 inline-block px-5 py-2.5 rounded-full backdrop-blur-sm font-medium">
               {t('cameraHint')}
             </p>
           </div>
@@ -159,17 +167,17 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
             variant="outline"
             size="icon"
             onClick={stopCamera}
-            className="w-12 h-12 rounded-full bg-background/80 backdrop-blur-sm"
+            className="w-14 h-14 rounded-full bg-background/90 backdrop-blur-sm border-2 hover-lift"
           >
-            <X className="h-5 w-5" />
+            <X className="h-6 w-6" />
           </Button>
           
           <Button
             size="icon"
             onClick={capturePhoto}
-            className="w-16 h-16 rounded-full hero-gradient shadow-elevated"
+            className="w-20 h-20 rounded-full hero-gradient shadow-elevated hover-lift"
           >
-            <Camera className="h-7 w-7" />
+            <Camera className="h-8 w-8" />
           </Button>
         </div>
       </div>
@@ -181,19 +189,23 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
       <div className="grid grid-cols-2 gap-4">
         <Button
           onClick={startCamera}
-          className="h-32 flex-col gap-3 hero-gradient text-primary-foreground hover:opacity-90 transition-opacity rounded-2xl shadow-card"
+          className="h-36 flex-col gap-4 hero-gradient text-primary-foreground hover:opacity-95 transition-all duration-300 rounded-2xl shadow-card hover-lift group"
         >
-          <Camera className="h-8 w-8" />
-          <span className="font-semibold">{t('capturePhoto')}</span>
+          <div className="w-14 h-14 rounded-xl bg-primary-foreground/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+            <Camera className="h-7 w-7" />
+          </div>
+          <span className="font-bold text-base">{t('capturePhoto')}</span>
         </Button>
 
         <Button
           variant="outline"
           onClick={() => fileInputRef.current?.click()}
-          className="h-32 flex-col gap-3 bg-card hover:bg-secondary transition-colors rounded-2xl border-2 border-dashed border-border"
+          className="h-36 flex-col gap-4 bg-card hover:bg-secondary transition-all duration-300 rounded-2xl border-2 border-dashed border-border hover:border-primary/50 hover-lift group"
         >
-          <Upload className="h-8 w-8 text-muted-foreground" />
-          <span className="font-semibold text-foreground">{t('uploadImage')}</span>
+          <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+            <Upload className="h-7 w-7 text-muted-foreground group-hover:text-primary transition-colors" />
+          </div>
+          <span className="font-bold text-base text-foreground">{t('uploadImage')}</span>
         </Button>
       </div>
 
