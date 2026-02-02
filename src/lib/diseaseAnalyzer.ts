@@ -57,59 +57,85 @@ function rgbToHsv(r: number, g: number, b: number): { h: number; s: number; v: n
   return { h, s, v };
 }
 
-// Classify a single pixel - returns disease type
+// Disease detection based on Kaggle Tea Leaf Disease Dataset
+// 7 diseases: Anthracnose, Algal Leaf Spot, Bird's Eye Spot, Brown Blight, Gray Blight, Red Leaf Spot, White Spot
+
 function classifyPixel(r: number, g: number, b: number): DiseaseType | null {
   const { h, s, v } = rgbToHsv(r, g, b);
 
-  // Skip non-leaf pixels (background, overexposed)
-  if (v < 8 || v > 98) return null;
-  if (s < 5 && v > 80) return null;
+  // Skip non-leaf pixels (background, overexposed, very dark)
+  if (v < 10 || v > 97) return null;
+  if (s < 8 && v > 85) return null; // Pure white background
 
-  // Red Leaf Spot: Bright red/rust spots
-  if (h <= 25 && s >= 35 && v >= 25 && v <= 85) {
-    return 'redLeafSpot';
+  // === DISEASE DETECTION (ordered by distinctiveness) ===
+
+  // 1. RED LEAF SPOT - Distinctive reddish-brown circular spots
+  // Characterized by rusty red to dark red-brown coloration
+  if (h >= 0 && h <= 30 && s >= 40 && v >= 20 && v <= 70) {
+    if (r > g && r > b * 0.9) {
+      return 'redLeafSpot';
+    }
   }
 
-  // Anthracnose: Dark brown to black lesions
-  if (h <= 45 && s >= 15 && s <= 65 && v >= 8 && v <= 40) {
-    return 'anthracnose';
+  // 2. ANTHRACNOSE - Dark brown to black necrotic lesions with defined margins
+  // Very dark, low saturation, brownish-black areas
+  if (v >= 8 && v <= 35 && s >= 15 && s <= 60) {
+    if (h >= 0 && h <= 50) {
+      return 'anthracnose';
+    }
   }
 
-  // Brown Blight: Brown necrotic areas
-  if (h >= 10 && h <= 50 && s >= 20 && s <= 75 && v >= 15 && v <= 60) {
-    return 'brownBlight';
+  // 3. BROWN BLIGHT - Irregular brown patches, often at leaf margins
+  // Medium brown coloration, moderate saturation
+  if (h >= 15 && h <= 45 && s >= 25 && s <= 70 && v >= 25 && v <= 55) {
+    if (r > g * 0.8 && r > b) {
+      return 'brownBlight';
+    }
   }
 
-  // White Spot / Blister Blight: Pale/white spots
-  if (s <= 30 && v >= 65) {
+  // 4. WHITE SPOT (Blister Blight) - Pale/whitish raised blisters
+  // Very low saturation, high value (whitish areas)
+  if (s <= 25 && v >= 70 && v <= 98) {
     return 'whiteSpot';
   }
 
-  // Gray Blight: Silver/gray patches
-  if (s <= 25 && v >= 30 && v <= 75) {
-    return 'grayBlight';
+  // 5. GRAY BLIGHT - Grayish-silver patches with dark margins
+  // Low saturation, medium value (gray appearance)
+  if (s >= 8 && s <= 30 && v >= 35 && v <= 70) {
+    if (Math.abs(r - g) < 30 && Math.abs(g - b) < 30) {
+      return 'grayBlight';
+    }
   }
 
-  // Bird's Eye Spot: Light tan/cream center
-  if (s <= 30 && v >= 55 && v <= 90 && h >= 15 && h <= 55) {
-    return 'birdsEyeSpot';
+  // 6. BIRD'S EYE SPOT - Small circular spots with tan/cream centers and dark rings
+  // Light tan/cream center areas
+  if (h >= 20 && h <= 50 && s >= 15 && s <= 45 && v >= 50 && v <= 85) {
+    if (r > g && g > b) {
+      return 'birdsEyeSpot';
+    }
   }
 
-  // Algal Leaf Spot: Grayish-green
-  if (h >= 70 && h <= 180 && s >= 8 && s <= 40 && v >= 25 && v <= 75) {
-    if (Math.abs(g - b) < 35 && g > r) {
+  // 7. ALGAL LEAF SPOT (Red Rust) - Grayish-green to orange-red crusty patches
+  // Unique grayish-green or orange tint from algae
+  if (h >= 60 && h <= 160 && s >= 10 && s <= 45 && v >= 30 && v <= 70) {
+    if (Math.abs(g - b) < 40 && g >= r * 0.8) {
       return 'algalLeafSpot';
     }
   }
 
-  // Healthy: Green leaf tissue
-  if (h >= 45 && h <= 165 && s >= 15 && v >= 15 && v <= 90) {
-    return 'healthy';
+  // === HEALTHY LEAF DETECTION ===
+  // Healthy tea leaves are typically dark to medium green
+  if (h >= 50 && h <= 160 && s >= 20 && v >= 15 && v <= 85) {
+    if (g >= r && g >= b) {
+      return 'healthy';
+    }
   }
 
-  // Greenish pixels default to healthy
-  if (g > r && g > b && h >= 35 && h <= 175) {
-    return 'healthy';
+  // Light green / yellowish-green (still healthy)
+  if (h >= 40 && h <= 90 && s >= 25 && v >= 40) {
+    if (g > r && g > b) {
+      return 'healthy';
+    }
   }
 
   return null;
