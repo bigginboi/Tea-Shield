@@ -1,12 +1,22 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { Camera, Upload, X, Leaf } from 'lucide-react';
+import { Camera, Upload, X, Leaf, Brain } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { AnalysisResult } from '@/lib/diseaseAnalyzer';
-import { analyzeTeaLeafImage } from '@/lib/mlAnalyzer';
+import { AnalysisResult, DiseaseType, SeverityLevel } from '@/lib/diseaseAnalyzer';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface ImageUploaderProps {
   onAnalysisComplete: (result: AnalysisResult, imageUrl: string) => void;
+}
+
+interface AIAnalysisResponse {
+  disease: DiseaseType;
+  confidence: number;
+  severity: SeverityLevel;
+  severityPercentage: number;
+  reasoning?: string;
+  error?: string;
 }
 
 export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
@@ -18,6 +28,7 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
+  const [analysisStatus, setAnalysisStatus] = useState('');
 
   // Attach stream to video element after component renders
   useEffect(() => {
@@ -67,21 +78,67 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
     setCameraReady(true);
   }, []);
 
-  const processAndAnalyze = useCallback((canvas: HTMLCanvasElement, imageUrl: string) => {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      setIsAnalyzing(false);
-      return;
-    }
+  const analyzeWithAI = useCallback(async (imageBase64: string, imageUrl: string) => {
+    setAnalysisStatus('Sending to AI model...');
+    
+    const startTime = performance.now();
+    
+    try {
+      const { data, error } = await supabase.functions.invoke<AIAnalysisResponse>('analyze-leaf', {
+        body: { imageBase64 }
+      });
 
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    
-    // Run analysis synchronously (it's now fast with sampling)
-    const result = analyzeTeaLeafImage(imageData);
-    console.log('Analysis complete:', result.processingTimeMs.toFixed(0), 'ms');
-    
-    onAnalysisComplete(result, imageUrl);
-    setIsAnalyzing(false);
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Analysis failed');
+      }
+
+      if (!data || data.error) {
+        throw new Error(data?.error || 'No analysis result');
+      }
+
+      const processingTimeMs = performance.now() - startTime;
+      console.log('AI Analysis complete:', processingTimeMs.toFixed(0), 'ms', data);
+
+      // Create full result object
+      const result: AnalysisResult = {
+        disease: data.disease,
+        confidence: data.confidence,
+        severity: data.severity,
+        severityPercentage: data.severityPercentage,
+        scores: {
+          redRust: 0,
+          algalLeafSpot: 0,
+          birdsEyeSpot: 0,
+          grayBlight: 0,
+          blisterBlight: 0,
+          anthracnose: 0,
+          brownBlight: 0,
+          healthy: 0,
+          uncertain: 0,
+          [data.disease]: data.confidence,
+        },
+        leafPixelCount: 0,
+        infectedPixelCount: 0,
+        processingTimeMs,
+      };
+
+      onAnalysisComplete(result, imageUrl);
+      
+    } catch (err) {
+      console.error('AI analysis error:', err);
+      const message = err instanceof Error ? err.message : 'Analysis failed';
+      
+      if (message.includes('Rate limit')) {
+        toast.error('Too many requests. Please wait a moment and try again.');
+      } else if (message.includes('credits')) {
+        toast.error('AI credits exhausted. Please add credits to continue.');
+      } else {
+        toast.error(`Analysis failed: ${message}`);
+      }
+      
+      setIsAnalyzing(false);
+    }
   }, [onAnalysisComplete]);
 
   const capturePhoto = useCallback(() => {
@@ -107,73 +164,84 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
 
     stopCamera();
     setIsAnalyzing(true);
+    setAnalysisStatus('Preparing image...');
 
-    // Process immediately
-    requestAnimationFrame(() => {
-      processAndAnalyze(canvas, imageUrl);
-    });
-  }, [stopCamera, processAndAnalyze]);
+    // Send to AI for analysis
+    analyzeWithAI(imageUrl, imageUrl);
+  }, [stopCamera, analyzeWithAI]);
 
   const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setIsAnalyzing(true);
+    setAnalysisStatus('Loading image...');
 
-    const img = new Image();
+    const reader = new FileReader();
     const imageUrl = URL.createObjectURL(file);
     
-    img.onload = () => {
-      // Create canvas for processing
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        setIsAnalyzing(false);
-        return;
-      }
-
-      // Resize large images for faster processing
-      const maxSize = 512;
-      let width = img.width;
-      let height = img.height;
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setAnalysisStatus('Preparing for analysis...');
       
-      if (width > maxSize || height > maxSize) {
-        const ratio = Math.min(maxSize / width, maxSize / height);
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
+      // Resize if too large (keep under 1MB for API)
+      const img = new Image();
+      img.onload = () => {
+        const maxSize = 800;
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > maxSize || height > maxSize) {
+          const ratio = Math.min(maxSize / width, maxSize / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
 
-      canvas.width = width;
-      canvas.height = height;
-      ctx.drawImage(img, 0, 0, width, height);
-
-      // Process immediately
-      requestAnimationFrame(() => {
-        processAndAnalyze(canvas, imageUrl);
-      });
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          setIsAnalyzing(false);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        const resizedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+        analyzeWithAI(resizedBase64, imageUrl);
+      };
+      
+      img.onerror = () => {
+        console.error('Failed to load image');
+        toast.error('Failed to load image');
+        setIsAnalyzing(false);
+      };
+      
+      img.src = base64;
     };
 
-    img.onerror = () => {
-      console.error('Failed to load image');
+    reader.onerror = () => {
+      console.error('Failed to read file');
+      toast.error('Failed to read file');
       setIsAnalyzing(false);
     };
 
-    img.src = imageUrl;
+    reader.readAsDataURL(file);
     event.target.value = '';
-  }, [processAndAnalyze]);
+  }, [analyzeWithAI]);
 
   if (isAnalyzing) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-5 fade-in">
         <div className="relative">
           <div className="w-20 h-20 rounded-full hero-gradient flex items-center justify-center shadow-glow">
-            <Leaf className="w-10 h-10 text-primary-foreground animate-leaf-sway" />
+            <Brain className="w-10 h-10 text-primary-foreground animate-pulse" />
           </div>
           <div className="absolute inset-0 rounded-full border-4 border-primary/30 animate-ping" />
         </div>
         <div className="text-center space-y-1">
-          <p className="text-foreground font-semibold">Analyzing leaf...</p>
-          <p className="text-muted-foreground text-sm">Processing color patterns</p>
+          <p className="text-foreground font-semibold">AI Analysis in Progress</p>
+          <p className="text-muted-foreground text-sm">{analysisStatus}</p>
         </div>
       </div>
     );
@@ -242,6 +310,12 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
 
   return (
     <div className="space-y-4 slide-up">
+      {/* AI Badge */}
+      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        <Brain className="h-4 w-4 text-primary" />
+        <span>Powered by AI Vision Model</span>
+      </div>
+      
       <div className="grid grid-cols-2 gap-4">
         <Button
           onClick={startCamera}
