@@ -12,14 +12,13 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
   const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   
   const [isCapturing, setIsCapturing] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [cameraReady, setCameraReady] = useState(false);
 
-  // Attach stream to video element after component renders with isCapturing=true
+  // Attach stream to video element after component renders
   useEffect(() => {
     if (isCapturing && stream && videoRef.current) {
       videoRef.current.srcObject = stream;
@@ -42,15 +41,14 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment', 
-          width: { ideal: 1280 }, 
-          height: { ideal: 720 } 
+          width: { ideal: 640 }, 
+          height: { ideal: 480 } 
         }
       });
       setStream(mediaStream);
       setIsCapturing(true);
     } catch (error) {
       console.error('Camera access error:', error);
-      // Fallback to file upload
       fileInputRef.current?.click();
     }
   }, []);
@@ -68,40 +66,54 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
     setCameraReady(true);
   }, []);
 
-  const capturePhoto = useCallback(async () => {
-    if (!videoRef.current || !canvasRef.current) return;
+  const processAndAnalyze = useCallback((canvas: HTMLCanvasElement, imageUrl: string) => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      setIsAnalyzing(false);
+      return;
+    }
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    
+    // Run analysis synchronously (it's now fast with sampling)
+    const result = analyzeLeafImage(imageData);
+    console.log('Analysis complete:', result.processingTimeMs.toFixed(0), 'ms');
+    
+    onAnalysisComplete(result, imageUrl);
+    setIsAnalyzing(false);
+  }, [onAnalysisComplete]);
+
+  const capturePhoto = useCallback(() => {
+    if (!videoRef.current) return;
 
     const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
     
-    if (!ctx) return;
-
-    // Ensure video has valid dimensions
     if (video.videoWidth === 0 || video.videoHeight === 0) {
       console.error('Video not ready');
       return;
     }
 
+    // Create canvas for capture
+    const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    ctx.drawImage(video, 0, 0);
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-    const imageUrl = canvas.toDataURL('image/jpeg', 0.9);
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, 0, 0);
+    const imageUrl = canvas.toDataURL('image/jpeg', 0.85);
 
     stopCamera();
     setIsAnalyzing(true);
 
-    try {
-      const result = await analyzeLeafImage(imageData);
-      onAnalysisComplete(result, imageUrl);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }, [stopCamera, onAnalysisComplete]);
+    // Process immediately
+    requestAnimationFrame(() => {
+      processAndAnalyze(canvas, imageUrl);
+    });
+  }, [stopCamera, processAndAnalyze]);
 
-  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -110,53 +122,56 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
     const img = new Image();
     const imageUrl = URL.createObjectURL(file);
     
-    img.onload = async () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
+    img.onload = () => {
+      // Create canvas for processing
+      const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (!ctx) {
+        setIsAnalyzing(false);
+        return;
+      }
 
-      const maxSize = 1024;
+      // Resize large images for faster processing
+      const maxSize = 512;
       let width = img.width;
       let height = img.height;
       
       if (width > maxSize || height > maxSize) {
         const ratio = Math.min(maxSize / width, maxSize / height);
-        width *= ratio;
-        height *= ratio;
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
       }
 
       canvas.width = width;
       canvas.height = height;
       ctx.drawImage(img, 0, 0, width, height);
 
-      const imageData = ctx.getImageData(0, 0, width, height);
+      // Process immediately
+      requestAnimationFrame(() => {
+        processAndAnalyze(canvas, imageUrl);
+      });
+    };
 
-      try {
-        const result = await analyzeLeafImage(imageData);
-        onAnalysisComplete(result, imageUrl);
-      } finally {
-        setIsAnalyzing(false);
-      }
+    img.onerror = () => {
+      console.error('Failed to load image');
+      setIsAnalyzing(false);
     };
 
     img.src = imageUrl;
     event.target.value = '';
-  }, [onAnalysisComplete]);
+  }, [processAndAnalyze]);
 
   if (isAnalyzing) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-6 fade-in">
+      <div className="flex flex-col items-center justify-center py-16 gap-5 fade-in">
         <div className="relative">
-          <div className="w-24 h-24 rounded-full hero-gradient flex items-center justify-center shadow-glow">
-            <Leaf className="w-12 h-12 text-primary-foreground animate-leaf-sway" />
+          <div className="w-20 h-20 rounded-full hero-gradient flex items-center justify-center shadow-glow">
+            <Leaf className="w-10 h-10 text-primary-foreground animate-leaf-sway" />
           </div>
           <div className="absolute inset-0 rounded-full border-4 border-primary/30 animate-ping" />
-          <div className="absolute -inset-2 rounded-full border-2 border-primary/20 animate-pulse" />
         </div>
-        <div className="text-center space-y-2">
-          <p className="text-foreground font-semibold text-lg">Analyzing leaf...</p>
+        <div className="text-center space-y-1">
+          <p className="text-foreground font-semibold">Analyzing leaf...</p>
           <p className="text-muted-foreground text-sm">Processing color patterns</p>
         </div>
       </div>
@@ -165,7 +180,7 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
 
   if (isCapturing) {
     return (
-      <div className="relative rounded-2xl overflow-hidden bg-foreground/5 fade-in shadow-card">
+      <div className="relative rounded-2xl overflow-hidden bg-black fade-in shadow-card">
         <video
           ref={videoRef}
           autoPlay
@@ -173,57 +188,51 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
           muted
           onLoadedMetadata={handleVideoReady}
           onCanPlay={handleVideoReady}
-          className="w-full aspect-[4/3] object-cover bg-black"
+          className="w-full aspect-[4/3] object-cover"
         />
         
-        {/* Loading overlay when camera is starting */}
         {!cameraReady && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-        <div className="text-center space-y-3">
-              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+            <div className="text-center space-y-3">
+              <div className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
               <p className="text-white text-sm">Starting camera...</p>
             </div>
           </div>
         )}
         
-        {/* Overlay guide - only show when camera is ready */}
         {cameraReady && (
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute inset-8 border-2 border-white/60 rounded-2xl" />
-            <div className="absolute inset-10 border border-white/30 rounded-xl" />
-            
-            {/* Corner markers */}
-            <div className="absolute top-6 left-6 w-8 h-8 border-t-4 border-l-4 border-white/80 rounded-tl-lg" />
-            <div className="absolute top-6 right-6 w-8 h-8 border-t-4 border-r-4 border-white/80 rounded-tr-lg" />
-            <div className="absolute bottom-20 left-6 w-8 h-8 border-b-4 border-l-4 border-white/80 rounded-bl-lg" />
-            <div className="absolute bottom-20 right-6 w-8 h-8 border-b-4 border-r-4 border-white/80 rounded-br-lg" />
+            <div className="absolute inset-8 border-2 border-white/50 rounded-2xl" />
+            <div className="absolute top-6 left-6 w-6 h-6 border-t-3 border-l-3 border-white/70 rounded-tl-lg" />
+            <div className="absolute top-6 right-6 w-6 h-6 border-t-3 border-r-3 border-white/70 rounded-tr-lg" />
+            <div className="absolute bottom-20 left-6 w-6 h-6 border-b-3 border-l-3 border-white/70 rounded-bl-lg" />
+            <div className="absolute bottom-20 right-6 w-6 h-6 border-b-3 border-r-3 border-white/70 rounded-br-lg" />
             
             <div className="absolute bottom-24 left-0 right-0 text-center">
-              <p className="text-white text-sm bg-black/50 inline-block px-5 py-2.5 rounded-full backdrop-blur-sm font-medium">
-                {t('cameraHint') || 'Position the tea leaf within the frame'}
+              <p className="text-white text-sm bg-black/50 inline-block px-4 py-2 rounded-full">
+                Position leaf in frame
               </p>
             </div>
           </div>
         )}
 
-        {/* Controls */}
         <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
           <Button
             variant="outline"
             size="icon"
             onClick={stopCamera}
-            className="w-14 h-14 rounded-full bg-white/90 backdrop-blur-sm border-2 hover-lift"
+            className="w-12 h-12 rounded-full bg-white/90 backdrop-blur-sm"
           >
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5" />
           </Button>
           
           <Button
             size="icon"
             onClick={capturePhoto}
             disabled={!cameraReady}
-            className="w-20 h-20 rounded-full hero-gradient shadow-elevated hover-lift disabled:opacity-50"
+            className="w-16 h-16 rounded-full hero-gradient shadow-elevated disabled:opacity-50"
           >
-            <Camera className="h-8 w-8" />
+            <Camera className="h-7 w-7" />
           </Button>
         </div>
       </div>
@@ -235,23 +244,23 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
       <div className="grid grid-cols-2 gap-4">
         <Button
           onClick={startCamera}
-          className="h-36 flex-col gap-4 hero-gradient text-primary-foreground hover:opacity-95 transition-all duration-300 rounded-2xl shadow-card hover-lift group"
+          className="h-32 flex-col gap-3 hero-gradient text-primary-foreground hover:opacity-95 rounded-2xl shadow-card hover-lift group"
         >
-          <div className="w-14 h-14 rounded-xl bg-primary-foreground/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-            <Camera className="h-7 w-7" />
+          <div className="w-12 h-12 rounded-xl bg-primary-foreground/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Camera className="h-6 w-6" />
           </div>
-          <span className="font-bold text-base">{t('capturePhoto')}</span>
+          <span className="font-bold">{t('capturePhoto')}</span>
         </Button>
 
         <Button
           variant="outline"
           onClick={() => fileInputRef.current?.click()}
-          className="h-36 flex-col gap-4 bg-card hover:bg-secondary transition-all duration-300 rounded-2xl border-2 border-dashed border-border hover:border-primary/50 hover-lift group"
+          className="h-32 flex-col gap-3 bg-card hover:bg-secondary rounded-2xl border-2 border-dashed hover:border-primary/50 hover-lift group"
         >
-          <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-            <Upload className="h-7 w-7 text-muted-foreground group-hover:text-primary transition-colors" />
+          <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Upload className="h-6 w-6 text-muted-foreground group-hover:text-primary" />
           </div>
-          <span className="font-bold text-base text-foreground">{t('uploadImage')}</span>
+          <span className="font-bold text-foreground">{t('uploadImage')}</span>
         </Button>
       </div>
 
@@ -262,8 +271,6 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
         onChange={handleFileUpload}
         className="hidden"
       />
-
-      <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 }
