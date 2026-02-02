@@ -1,0 +1,4 @@
+project_id = "iawsisrnthvjyditdduw"
+
+[functions.analyze-leaf]
+verify_jwt = false
