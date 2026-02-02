@@ -1,7 +1,7 @@
 import { AlertTriangle, CheckCircle2, Info, RefreshCw, MessageCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { AnalysisResult, DiseaseType, getConfidenceLevel } from '@/lib/diseaseAnalyzer';
+import { AnalysisResult, DiseaseType, getConfidenceLevel, diseaseNames } from '@/lib/diseaseAnalyzer';
 import { TreatmentPlan } from './TreatmentPlan';
 
 interface ResultDisplayProps {
@@ -12,25 +12,33 @@ interface ResultDisplayProps {
 }
 
 const diseaseColors: Record<DiseaseType, string> = {
-  redRust: 'bg-disease-rust',
+  redLeafSpot: 'bg-disease-rust',
+  algalLeafSpot: 'bg-primary/70',
+  birdsEyeSpot: 'bg-amber-500',
+  grayBlight: 'bg-gray-500',
+  whiteSpot: 'bg-disease-blister text-foreground',
+  anthracnose: 'bg-disease-brown',
   brownBlight: 'bg-disease-brown',
-  blisterBlight: 'bg-disease-blister text-foreground',
   healthy: 'bg-disease-healthy',
   uncertain: 'bg-muted text-muted-foreground',
 };
 
 const diseaseIcons: Record<DiseaseType, React.ReactNode> = {
-  redRust: <AlertTriangle className="h-6 w-6" />,
+  redLeafSpot: <AlertTriangle className="h-6 w-6" />,
+  algalLeafSpot: <AlertTriangle className="h-6 w-6" />,
+  birdsEyeSpot: <AlertTriangle className="h-6 w-6" />,
+  grayBlight: <AlertTriangle className="h-6 w-6" />,
+  whiteSpot: <AlertTriangle className="h-6 w-6" />,
+  anthracnose: <AlertTriangle className="h-6 w-6" />,
   brownBlight: <AlertTriangle className="h-6 w-6" />,
-  blisterBlight: <AlertTriangle className="h-6 w-6" />,
   healthy: <CheckCircle2 className="h-6 w-6" />,
   uncertain: <Info className="h-6 w-6" />,
 };
 
 export function ResultDisplay({ result, imageUrl, onReset, onOpenChat }: ResultDisplayProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
-  const diseaseName = t(result.disease === 'uncertain' ? 'uncertain' : result.disease);
+  const diseaseName = diseaseNames[result.disease]?.[language] || diseaseNames[result.disease]?.en || result.disease;
   const confidenceLevel = getConfidenceLevel(result.confidence);
   
   const severityColor = 

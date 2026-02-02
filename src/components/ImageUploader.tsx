@@ -1,5 +1,5 @@
-import { useRef, useState, useCallback } from 'react';
-import { Camera, Upload, X, Loader2, Leaf } from 'lucide-react';
+import { useRef, useState, useCallback, useEffect } from 'react';
+import { Camera, Upload, X, Leaf } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { analyzeLeafImage, AnalysisResult } from '@/lib/diseaseAnalyzer';
@@ -17,20 +17,40 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
   const [isCapturing, setIsCapturing] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [cameraReady, setCameraReady] = useState(false);
+
+  // Attach stream to video element after component renders with isCapturing=true
+  useEffect(() => {
+    if (isCapturing && stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(console.error);
+    }
+  }, [isCapturing, stream]);
+
+  // Cleanup stream on unmount
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [stream]);
 
   const startCamera = useCallback(async () => {
     try {
+      setCameraReady(false);
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        video: { 
+          facingMode: 'environment', 
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 } 
+        }
       });
       setStream(mediaStream);
       setIsCapturing(true);
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
     } catch (error) {
       console.error('Camera access error:', error);
+      // Fallback to file upload
       fileInputRef.current?.click();
     }
   }, []);
@@ -41,7 +61,12 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
       setStream(null);
     }
     setIsCapturing(false);
+    setCameraReady(false);
   }, [stream]);
+
+  const handleVideoReady = useCallback(() => {
+    setCameraReady(true);
+  }, []);
 
   const capturePhoto = useCallback(async () => {
     if (!videoRef.current || !canvasRef.current) return;
@@ -51,6 +76,12 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
     const ctx = canvas.getContext('2d');
     
     if (!ctx) return;
+
+    // Ensure video has valid dimensions
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      console.error('Video not ready');
+      return;
+    }
 
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -140,26 +171,40 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
           autoPlay
           playsInline
           muted
-          className="w-full aspect-[4/3] object-cover"
+          onLoadedMetadata={handleVideoReady}
+          onCanPlay={handleVideoReady}
+          className="w-full aspect-[4/3] object-cover bg-black"
         />
         
-        {/* Overlay guide */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute inset-8 border-2 border-primary-foreground/60 rounded-2xl" />
-          <div className="absolute inset-10 border border-primary-foreground/30 rounded-xl" />
-          
-          {/* Corner markers */}
-          <div className="absolute top-6 left-6 w-8 h-8 border-t-4 border-l-4 border-primary-foreground/80 rounded-tl-lg" />
-          <div className="absolute top-6 right-6 w-8 h-8 border-t-4 border-r-4 border-primary-foreground/80 rounded-tr-lg" />
-          <div className="absolute bottom-20 left-6 w-8 h-8 border-b-4 border-l-4 border-primary-foreground/80 rounded-bl-lg" />
-          <div className="absolute bottom-20 right-6 w-8 h-8 border-b-4 border-r-4 border-primary-foreground/80 rounded-br-lg" />
-          
-          <div className="absolute bottom-24 left-0 right-0 text-center">
-            <p className="text-primary-foreground text-sm bg-foreground/50 inline-block px-5 py-2.5 rounded-full backdrop-blur-sm font-medium">
-              {t('cameraHint')}
-            </p>
+        {/* Loading overlay when camera is starting */}
+        {!cameraReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+        <div className="text-center space-y-3">
+              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-white text-sm">Starting camera...</p>
+            </div>
           </div>
-        </div>
+        )}
+        
+        {/* Overlay guide - only show when camera is ready */}
+        {cameraReady && (
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-8 border-2 border-white/60 rounded-2xl" />
+            <div className="absolute inset-10 border border-white/30 rounded-xl" />
+            
+            {/* Corner markers */}
+            <div className="absolute top-6 left-6 w-8 h-8 border-t-4 border-l-4 border-white/80 rounded-tl-lg" />
+            <div className="absolute top-6 right-6 w-8 h-8 border-t-4 border-r-4 border-white/80 rounded-tr-lg" />
+            <div className="absolute bottom-20 left-6 w-8 h-8 border-b-4 border-l-4 border-white/80 rounded-bl-lg" />
+            <div className="absolute bottom-20 right-6 w-8 h-8 border-b-4 border-r-4 border-white/80 rounded-br-lg" />
+            
+            <div className="absolute bottom-24 left-0 right-0 text-center">
+              <p className="text-white text-sm bg-black/50 inline-block px-5 py-2.5 rounded-full backdrop-blur-sm font-medium">
+                {t('cameraHint') || 'Position the tea leaf within the frame'}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Controls */}
         <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
@@ -167,7 +212,7 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
             variant="outline"
             size="icon"
             onClick={stopCamera}
-            className="w-14 h-14 rounded-full bg-background/90 backdrop-blur-sm border-2 hover-lift"
+            className="w-14 h-14 rounded-full bg-white/90 backdrop-blur-sm border-2 hover-lift"
           >
             <X className="h-6 w-6" />
           </Button>
@@ -175,7 +220,8 @@ export function ImageUploader({ onAnalysisComplete }: ImageUploaderProps) {
           <Button
             size="icon"
             onClick={capturePhoto}
-            className="w-20 h-20 rounded-full hero-gradient shadow-elevated hover-lift"
+            disabled={!cameraReady}
+            className="w-20 h-20 rounded-full hero-gradient shadow-elevated hover-lift disabled:opacity-50"
           >
             <Camera className="h-8 w-8" />
           </Button>
